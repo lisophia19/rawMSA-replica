@@ -4,13 +4,13 @@ import tensorflow as tf
 print(tf.__version__)
 
 #run from scripts folder
-with open('rawmsa-original/models/rsa/list', 'r') as file:
+with open('rawmsa-original/models/ss/list', 'r') as file:
     model_list = file.read().splitlines()
 
 print(model_list[:2])
 
 for model_path in model_list[:1]:
-    model_path = "rawmsa-original/models/rsa/" + model_path[10:]
+    model_path = "rawmsa-original/models/ss/" + model_path[10:]
     model = tf.keras.models.load_model(model_path)
     model.summary()
 

@@ -10,15 +10,13 @@ embedding_dim = output_dim
 class RSAProteinModel(nn.Module):
     def __init__(self, input_dim=26, embedding_dim=28, lstm_hidden=350, dropout_rate=0.4):
         super(RSAProteinModel, self).__init__()
-        
+
         self.embedding = nn.Embedding(num_embeddings=input_dim, embedding_dim=embedding_dim)
 
-        # reshape to (batch_size, channels, height, width) = (N, 1, 31, 1000)
-        self.conv = nn.Conv2d(in_channels=1, out_channels=embedding_dim, kernel_size=(1, 20), padding=(0, 10))
-        self.pool = nn.MaxPool2d(kernel_size=(1, 30), stride=(1, 30))
-        
-        # after reshape: (batch_size, 31, 924)
-        self.bilstm1 = nn.LSTM(input_size=924, hidden_size=lstm_hidden, num_layers=1, 
+        self.conv = nn.Conv2d(in_channels=1, out_channels=embedding_dim, kernel_size=(1, 10), padding=(0, 5))
+        self.pool = nn.MaxPool2d(kernel_size=(1, 20), stride=(1, 20))
+
+        self.bilstm1 = nn.LSTM(input_size=700, hidden_size=lstm_hidden, num_layers=1, 
                                batch_first=True, bidirectional=True)
         self.bilstm2 = nn.LSTM(input_size=lstm_hidden, hidden_size=lstm_hidden, num_layers=1, 
                                batch_first=True, bidirectional=True)
@@ -27,27 +25,25 @@ class RSAProteinModel(nn.Module):
 
         self.fc1 = nn.Linear(31 * lstm_hidden, 50)
         self.fc2 = nn.Linear(50, 20)
-        self.fc3 = nn.Linear(20, 4)
+        self.fc3 = nn.Linear(20, 3)
 
     def forward(self, x):
         # x shape: (batch_size, 31000)
-        x = self.embedding(x)  # -> (batch_size, 31000, 28)
-        x = x.view(-1, 31, 1000, 28)  # reshape
-        x = x.permute(0, 3, 1, 2)     # (batch, channels=28, height=31, width=1000)
-        x = F.relu(self.conv(x))      # Conv2D
-        x = self.pool(x)              # MaxPooling2D -> (batch, channels, 31, 33)
-        
-        x = x.permute(0, 2, 1, 3).contiguous()  # -> (batch, 31, 28, 33)
-        x = x.view(x.size(0), x.size(1), -1)    # -> (batch, 31, 924)
+        x = self.embedding(x)  # -> (batch_size, 31000, 14)
+        x = x.view(-1, 31, 1000, 14)
+        x = x.permute(0, 3, 1, 2)  # (batch, channels=14, height=31, width=1000)
+        x = F.relu(self.conv(x))
+        x = self.pool(x)  # -> (batch, channels=14, height=31, width=50)
 
-        # BiLSTM with average merge mode
+        x = x.permute(0, 2, 1, 3).contiguous()  # -> (batch, 31, 14, 50)
+        x = x.view(x.size(0), 31, -1)  # -> (batch, 31, 700)
+
         lstm_out1, _ = self.bilstm1(x)
         lstm_out1 = self.dropout(lstm_out1)
         lstm_out2, _ = self.bilstm2(lstm_out1)
         lstm_out2 = self.dropout(lstm_out2)
 
-        # average merge
-        lstm_out = 0.5 * (lstm_out1[:, :, :lstm_out1.size(2)//2] + lstm_out1[:, :, lstm_out1.size(2)//2:])
+        lstm_out = 0.5 * (lstm_out2[:, :, :lstm_out2.size(2)//2] + lstm_out2[:, :, lstm_out2.size(2)//2:])
 
         x = lstm_out.contiguous().view(x.size(0), -1)  # flatten
         x = self.dropout(F.linear(x, self.fc1.weight, self.fc1.bias))
