@@ -5,8 +5,10 @@ def parse_file(filepath: str):
 
     output_dir = Path.cwd() / "id_list"
     output_dir.mkdir(exist_ok=True)
-    pdb_filepath = output_dir / "pbd_list.txt"
 
+    pfam_id = filepath.name.split(".")[0]
+    pdb_filepath = output_dir / ("pbd_list_" + pfam_id + ".txt")
+    
     with open(filepath, 'r') as stockholm, open(pdb_filepath, 'a') as output:
         for line in stockholm:
             if "_HUMAN" in line and "DR PDB;" in line:
@@ -17,9 +19,10 @@ def parse_file(filepath: str):
                     with open(pdb_filepath, "a") as file:
                         file.write(pbd_id + ";" + org + "\n")
 
-
-parse_file("/Users/kelleytu/Documents/CS1470/rawMSA-replica/stockholm_data/PF00071.alignment.seed")
-
+file_num = 1
+for data_file in (Path.cwd() / "stockholm_data").iterdir():
+    parse_file(data_file)
+    file_num += 1
 
 
 
