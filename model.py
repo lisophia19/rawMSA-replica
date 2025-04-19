@@ -101,7 +101,7 @@ def main():
     L, Y = 200, 500  # e.g., 200 residues, 500 aligned sequences
     num_classes = 4
 
-    # MSA DATA RNADOM RN NEED TO CHANGE
+    # MSA DATA RANDOM RN NEED TO CHANGE
     train_msa = torch.randint(1, 26, (L, Y))
     train_labels = F.one_hot(torch.randint(0, num_classes, (L,)), num_classes=num_classes).float()
 
