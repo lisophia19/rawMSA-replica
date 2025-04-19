@@ -1,94 +1,51 @@
-import requests
-from io import StringIO
+from collections import defaultdict
 
-dssp_base_url = "https://pdb-redo.eu/dssp/get?format=dssp&_csrf=00Uptl0u9vPJvcig4k6mjw"
+def parse_stockholm_with_ss(file_path):
+    sequences = defaultdict(str)
+    sec_structs = defaultdict(str)
 
-def pull_individual_dssp_data(pdb_id:str):
-    response = requests.get(f'{dssp_base_url}&pdb-id={pdb_id}')
-
-    if response.status_code == 200:
-        print("Request successful!")
-        # # print(response.content)
-        # path = f'{pdb_id}-dssp-file.txt'
-        # dssp_file = open(path, 'a')
-        # dssp_file.write(str(response.content))
-        # dssp_file.close()
-        # return path
-        return response.content.decode()
-    # else:
-    #     raise Exception("Failed to request")
-
-
-
-# def organize_parsed_data(curr_fasta_file, pdb_id, species_name):
-    
-def extract_fasta_and_ss(dssp_data, start_residue, end_residue):
-    sequence = []
-    structure = []
-
-    dssp_data_io = StringIO(dssp_data)
-
-    next_line = False
-    for line in dssp_data_io:         
-
-        if line.startswith('  #  RESIDUE'):  # Skip comment or header lines
-            next_line = True
-            continue
-        if next_line:
-            amino_acid = line[13:14]  # Adjust the index if needed based on your DSSP format
-            if amino_acid == "!":
-                print(line)
+    with open(file_path, 'r') as f:
+        previous_line = ""
+        for line in f:        
+            if not line or line.startswith('#=GC'):
                 continue
-            # print(line)
-            if int(line[7:10]) >= start_residue and int(line[7:10]) <= end_residue:
-                # Each line corresponds to a residue, the second column should contain the AA
-                sequence.append(amino_acid)
-                # print(amino_acid)
-                ss = line[16:17]
-                if ss == " ":
-                    ss = "-"
-                structure.append(ss)    
+            
+            if line.startswith('#=GR'):
+                sequence = previous_line.split()
+                print(sequence)
 
-    fasta_sequence = ''.join(sequence)
-    structure_sequence = ''.join(structure)
-    return fasta_sequence, structure_sequence
+                ss = line.split()
+                print(ss)
 
+                if ss[2] == 'SS':
 
-# Steps:
-#   1. Reads the data from the PDB entries of format PDB;SPECIES
-#   2. Opens file for both the PDB entries and the FASTA format
-#       - PDB entries are used to pull SS data ==> make GET request (1), parse DSSP data (2)
-#       - FASTA entries are used to pull the proper sequence
-#   3. Write Species\nFASTA\nSS
-def read_pdb_entries(family_name_file: str):
-    pdb_entries = open(f'id_lists/{family_name_file}', 'r')
+                    seq_id = sequence[0]
+                    actual_sequence = sequence[1]
+                    ss_sequence = ss[3]
 
-    for line in pdb_entries:
-        parsed_data = open(f'pulled-pdb-files/fasta-{family_name_file}', 'a')
-
-        print(line)
-        # Each line corresponds to a PDB id:
-        line = line.split(';')
-        pdb_id = line[0]
-
-        residues = line[1].split('-')
-        start_residue = int(residues[0])
-        end_residue = int(residues[1])
+                    sequences[seq_id] += actual_sequence
+                    sec_structs[seq_id] += ss_sequence
+            else:
+                previous_line = line
 
 
-        dssp_data = pull_individual_dssp_data(pdb_id)
-        fasta_data, ss_data = extract_fasta_and_ss(dssp_data, start_residue, end_residue)
+    return sequences, sec_structs
 
-        # Write fasta_data first, then ss_data
+def write_fasta_with_ss(sequences, sec_structs, output_path):
+    with open(output_path, 'w') as out:
+        for seq_id, sequence in sequences.items():
+            out.write(f">{seq_id}\n{sequence}\n")
+            if seq_id in sec_structs:
+                out.write(f">{seq_id}_SS\n{sec_structs[seq_id]}\n")
 
-        parsed_data.write(f'{fasta_data}\n')
-        parsed_data.write(f'{ss_data}\n\n')
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) != 3:
+        print("Usage: python sto_to_fasta_with_ss.py input.sto output.fasta")
+        sys.exit(1)
 
-        parsed_data.close()
-    
-    pdb_entries.close()
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
 
-
-read_pdb_entries('pbd_list_PF00069.txt')
-read_pdb_entries('pbd_list_PF00071.txt')
-
+    seqs, ss = parse_stockholm_with_ss(input_file)
+    write_fasta_with_ss(seqs, ss, output_file)
