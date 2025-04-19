@@ -3,7 +3,7 @@ from pathlib import Path
 def parse_file(filepath: str):
     used_orgs = set()
 
-    output_dir = Path.cwd() / "output"
+    output_dir = Path.cwd() / "id_list"
     output_dir.mkdir(exist_ok=True)
     pdb_filepath = output_dir / "pbd_list.txt"
 
@@ -18,7 +18,7 @@ def parse_file(filepath: str):
                         file.write(pbd_id + ";" + org + "\n")
 
 
-parse_file("/Users/kelleytu/Documents/CS1470/rawMSA-replica/PF00071.alignment.seed")
+parse_file("/Users/kelleytu/Documents/CS1470/rawMSA-replica/stockholm_data/PF00071.alignment.seed")
 
 
 
