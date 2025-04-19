@@ -3,7 +3,7 @@ from pathlib import Path
 def parse_file(filepath: str):
     used_orgs = set()
 
-    output_dir = Path.cwd() / "id_list"
+    output_dir = Path.cwd() / "id_lists"
     output_dir.mkdir(exist_ok=True)
 
     pfam_id = filepath.name.split(".")[0]
