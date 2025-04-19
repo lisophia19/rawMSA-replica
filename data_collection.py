@@ -34,16 +34,20 @@ def extract_fasta_and_ss(dssp_data, start_residue, end_residue):
         if line.startswith('  #  RESIDUE'):  # Skip comment or header lines
             next_line = True
             continue
-        if next_line and int(line[7:10]) >= start_residue and int(line[7:10]) <= end_residue:
-            # Each line corresponds to a residue, the second column should contain the AA
+        if next_line:
             amino_acid = line[13:14]  # Adjust the index if needed based on your DSSP format
-            if amino_acid != " ":
+            if amino_acid == "!":
+                print(line)
+                continue
+            # print(line)
+            if int(line[7:10]) >= start_residue and int(line[7:10]) <= end_residue:
+                # Each line corresponds to a residue, the second column should contain the AA
                 sequence.append(amino_acid)
-            # print(amino_acid)
-            ss = line[16:17]
-            if ss == " ":
-                ss = "-"
-            structure.append(ss)    
+                # print(amino_acid)
+                ss = line[16:17]
+                if ss == " ":
+                    ss = "-"
+                structure.append(ss)    
 
     fasta_sequence = ''.join(sequence)
     structure_sequence = ''.join(structure)
@@ -57,7 +61,7 @@ def extract_fasta_and_ss(dssp_data, start_residue, end_residue):
 #       - FASTA entries are used to pull the proper sequence
 #   3. Write Species\nFASTA\nSS
 def read_pdb_entries(family_name_file: str):
-    pdb_entries = open(f'pdb-entries/{family_name_file}', 'r')
+    pdb_entries = open(f'id_lists/{family_name_file}', 'r')
 
     for line in pdb_entries:
         parsed_data = open(f'pulled-pdb-files/fasta-{family_name_file}', 'a')
@@ -78,13 +82,13 @@ def read_pdb_entries(family_name_file: str):
         # Write fasta_data first, then ss_data
 
         parsed_data.write(f'{fasta_data}\n')
-        parsed_data.write(f'{ss_data}\n')
+        parsed_data.write(f'{ss_data}\n\n')
 
         parsed_data.close()
     
     pdb_entries.close()
 
 
-read_pdb_entries('ras-family.txt')
-
+read_pdb_entries('pbd_list_PF00069.txt')
+read_pdb_entries('pbd_list_PF00071.txt')
 
