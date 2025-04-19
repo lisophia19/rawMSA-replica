@@ -33,8 +33,8 @@ def map_to_integer(seq : str):
             index += 1
 
             # Prints current number 
-            print(str(number), end=';')
-        print(f'\n{index}\n')
+        #     print(str(number), end=';')
+        # print(f'\n{index}\n')
 
     fasta_format.close()
 
