@@ -8,7 +8,7 @@ model assumes input sequence is of length 31000 but we mgiht need to fix that...
 embedding_dim = output_dim
 """
 class RSAProteinModel(nn.Module):
-    def __init__(self, input_dim=26, embedding_dim=28, lstm_hidden=350, dropout_rate=0.4):
+    def __init__(self, input_dim=26, embedding_dim=14, lstm_hidden=350, dropout_rate=0.4):
         super(RSAProteinModel, self).__init__()
 
         self.embedding = nn.Embedding(num_embeddings=input_dim, embedding_dim=embedding_dim)
