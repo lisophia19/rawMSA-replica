@@ -104,11 +104,11 @@ def main():
 
     # MSA DATA RANDOM RN NEED TO CHANGE
     
-    example_data_path = Path.cwd() / "preprocessed_data" / "PF00069_preprocessed"
+    example_data_path = Path.cwd() / "preprocessed_data" / "preprocessed_data"
 
     train_msa = torch.zeros((L, Y), )
     seq_index = -1
-    
+
     with open(example_data_path, 'r') as example_data:
         for line in example_data:
             if line.startswith('>'):
@@ -119,9 +119,19 @@ def main():
                 break
 
             residuals = line.split()
+            if len(residuals) > 200:
+                continue
+
+
             for res_index, val in enumerate(residuals):
                 if res_index < train_msa.shape[0]:
+                    print(val)
                     train_msa[res_index][seq_index] = float(val)
+
+    rand_seq_indices = torch.randperm(500)
+    rand_res_indices = torch.randperm(200)
+    train_msa = train_msa[rand_res_indices][:,rand_seq_indices]
+
     print(train_msa)
 
     train_labels = F.one_hot(torch.randint(0, num_classes, (L,)), num_classes=num_classes).float()
@@ -174,6 +184,7 @@ def main():
 
     print()
     print(model)
+
 
 
 main()
