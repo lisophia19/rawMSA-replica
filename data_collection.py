@@ -37,7 +37,7 @@ def write_fasta_with_ss(sequences, sec_structs, output_path):
         for seq_id, sequence in sequences.items():
             out.write(f">{seq_id}\n{sequence}\n")
             if seq_id in sec_structs:
-                out.write(f">{seq_id}_SS\n{sec_structs[seq_id]}\n")
+                out.write(f"<{seq_id}_SS\n{sec_structs[seq_id]}\n")
 
 def parse_all_files():
     for data_file in (Path.cwd() / "collected_data").iterdir():
