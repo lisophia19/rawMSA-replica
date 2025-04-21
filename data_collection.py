@@ -39,12 +39,6 @@ def write_fasta_with_ss(sequences, sec_structs, output_path):
             if seq_id in sec_structs:
                 out.write(f">{seq_id}_SS\n{sec_structs[seq_id]}\n")
 
-
-# def parse_all_files(input_files, output_files):
-#     for input_file, output_file in zip(input_files, output_files):
-#         seqs, ss = parse_stockholm_with_ss(input_file)
-#         write_fasta_with_ss(seqs, ss, output_file)
-
 def parse_all_files():
     for data_file in (Path.cwd() / "collected_data").iterdir():
         Path.unlink(data_file)
