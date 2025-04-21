@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
+from pathlib import Path
 
 """"
 model assumes input sequence is of length 31000 but we mgiht need to fix that...
@@ -102,7 +103,27 @@ def main():
     num_classes = 4
 
     # MSA DATA RANDOM RN NEED TO CHANGE
-    train_msa = torch.randint(1, 26, (L, Y))
+    
+    example_data_path = Path.cwd() / "preprocessed_data" / "PF00069_preprocessed"
+
+    train_msa = torch.zeros((L, Y), )
+    seq_index = -1
+    
+    with open(example_data_path, 'r') as example_data:
+        for line in example_data:
+            if line.startswith('>'):
+                seq_index += 1
+                continue
+            
+            if seq_index >= train_msa.shape[1]:
+                break
+
+            residuals = line.split()
+            for res_index, val in enumerate(residuals):
+                if res_index < train_msa.shape[0]:
+                    train_msa[res_index][seq_index] = float(val)
+    print(train_msa)
+
     train_labels = F.one_hot(torch.randint(0, num_classes, (L,)), num_classes=num_classes).float()
 
     test_msa = torch.randint(1, 26, (L, Y))
@@ -153,3 +174,6 @@ def main():
 
     print()
     print(model)
+
+
+main()
