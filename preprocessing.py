@@ -37,7 +37,10 @@ def map_to_integer(fasta_file : str):
 
             if line.startswith('>'):
                 count += 1
-                output_file.write(line)
+                if count == 1:
+                    output_file.write(line)
+                else:
+                    output_file.write("\n" + line)
                 continue
 
             index = 0
@@ -49,7 +52,7 @@ def map_to_integer(fasta_file : str):
                 except KeyError:
                     number = 25      
                 index += 1
-            output_file.write(" ".join(integers) + "\n")
+            output_file.write(" ".join(integers))
 
 
 for data_file in (Path.cwd() / "preprocessed_data").iterdir(): # remove existing files from the id_lists folder
