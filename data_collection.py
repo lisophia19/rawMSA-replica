@@ -44,6 +44,6 @@ def parse_all_files():
         Path.unlink(data_file)
     for data_file in (Path.cwd() / "stockholm_data").iterdir():
         seqs, ss = parse_stockholm_with_ss(data_file)
-        write_fasta_with_ss(seqs, ss, Path.cwd() / "collected_data" / "data.txt")
+        write_fasta_with_ss(seqs, ss, Path.cwd() / "collected_data" / "data")
 
 parse_all_files()
