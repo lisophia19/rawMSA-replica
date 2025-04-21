@@ -13,10 +13,8 @@ def parse_stockholm_with_ss(file_path):
             
             if line.startswith('#=GR'):
                 sequence = previous_line.split()
-                print(sequence)
 
                 ss = line.split()
-                print(ss)
 
                 if ss[2] == 'SS':
 
@@ -44,6 +42,6 @@ def parse_all_files():
         Path.unlink(data_file)
     for data_file in (Path.cwd() / "stockholm_data").iterdir():
         seqs, ss = parse_stockholm_with_ss(data_file)
-        write_fasta_with_ss(seqs, ss, Path.cwd() / "collected_data" / "data")
+        write_fasta_with_ss(seqs, ss, Path.cwd() / "collected_data" / "data.txt")
 
 parse_all_files()

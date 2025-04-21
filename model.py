@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
 from pathlib import Path
+from preprocessing import *
 
 """"
 model assumes input sequence is of length 31000 but we mgiht need to fix that...
@@ -104,29 +105,32 @@ def main():
 
     # MSA DATA RANDOM RN NEED TO CHANGE
     
-    example_data_path = Path.cwd() / "preprocessed_data" / "preprocessed_data"
+    # example_data_path = Path.cwd() / "preprocessed_data" / "preprocessed_data"
 
-    train_msa = torch.zeros((L, Y), )
-    seq_index = -1
+    # train_msa = torch.zeros((L, Y), )
+    # seq_index = -1
 
-    with open(example_data_path, 'r') as example_data:
-        for line in example_data:
-            if line.startswith('>'):
-                seq_index += 1
-                continue
+    # with open(example_data_path, 'r') as example_data:
+    #     for line in example_data:
+    #         if line.startswith('>'):
+    #             seq_index += 1
+    #             continue
             
-            if seq_index >= train_msa.shape[1]:
-                break
+    #         if seq_index >= train_msa.shape[1]:
+    #             break
 
-            residuals = line.split()
-            if len(residuals) > 200:
-                continue
+    #         residuals = line.split()
+    #         if len(residuals) > 200:
+    #             continue
 
 
-            for res_index, val in enumerate(residuals):
-                if res_index < train_msa.shape[0]:
-                    print(val)
-                    train_msa[res_index][seq_index] = float(val)
+    #         for res_index, val in enumerate(residuals):
+    #             if res_index < train_msa.shape[0]:
+    #                 print(val)
+    #                 train_msa[res_index][seq_index] = float(val)
+
+    # EACH OF THESE TENSORS ARE OF SIZE (N, 200) ==> N represents the number of sequences
+    all_sequences, sequence_labels = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
 
     rand_seq_indices = torch.randperm(500)
     rand_res_indices = torch.randperm(200)
