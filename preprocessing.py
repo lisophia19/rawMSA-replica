@@ -51,11 +51,9 @@ def map_to_integer(data_file : str):
         for line in unprocessed_data:
             if line.startswith('>'):
                 sequence_type = 'SEQUENCE'
-                print("SEQUENCE LINE: ", line)
                 continue
             if line.startswith('<'):
                 sequence_type = 'LABEL'
-                print("LABEL LINE: ", line)
                 continue
 
             if sequence_type == 'SEQUENCE':
@@ -67,31 +65,5 @@ def map_to_integer(data_file : str):
     
     return np.array(all_sequences), np.array(sequence_labels)
 
-print(map_to_integer(Path.cwd() / "fasta-pbd_list_PF00071.txt"))
-
-    # output_dir = Path.cwd() / "preprocessed_data"
-    # output_dir.mkdir(exist_ok=True)
-
-    # output_filepath = output_dir / "preprocessed_data" # filepath of the new file
-
-    # with open(data_file, "r") as data_file, open(output_filepath, "a") as output_file:
-    #     for line in data_file:
-
-    #         if count == limit:
-    #             break
-
-    #         if line.startswith('>'):
-    #             output_file.write("\n" + line)
-    #             continue
-
-    #         index = 0
-    #         integers = []
-    #         while index < len(line.rstrip()):
-    #             try:
-    #                 number = letter_to_number[line[index]]
-    #                 integers.append(str(number))
-    #             except KeyError:
-    #                 number = 25      
-    #             index += 1
-    #         output_file.write(" ".join(integers))
-
+# all_sequences, sequence_labels = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
+# print(all_sequences)
