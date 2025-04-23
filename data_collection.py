@@ -1,5 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
+import os
 
 def parse_stockholm_with_ss(file_path):
     sequences = defaultdict(str)
@@ -40,8 +41,14 @@ def write_fasta_with_ss(sequences, sec_structs, output_path):
 def parse_all_files():
     for data_file in (Path.cwd() / "collected_data").iterdir():
         Path.unlink(data_file)
-    for data_file in (Path.cwd() / "stockholm_data").iterdir():
-        seqs, ss = parse_stockholm_with_ss(data_file)
-        write_fasta_with_ss(seqs, ss, Path.cwd() / "collected_data" / "data.txt")
+    # lst = os.listdir(os.path.join('..', "stockholm_data"))
+    # print(lst)
+    for root, _, files in os.walk("stockholm_data"):# (Path.cwd() / "stockholm_data").iterdir():
+        for file in files:
+            seqs, ss = parse_stockholm_with_ss(os.path.join("stockholm_data", file))
+
+            updated_file_name = file[0:7] + ".parsed.txt"
+
+            write_fasta_with_ss(seqs, ss, os.path.join("collected_data", updated_file_name))
 
 parse_all_files()
