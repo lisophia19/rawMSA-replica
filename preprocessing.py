@@ -12,6 +12,8 @@ def split_data():
     sequence_data, sequence_labels = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
     sequence_data = torch.tensor(sequence_data)
     sequence_labels = torch.tensor(sequence_labels)
+    print(sequence_data)
+    print(sequence_labels)
     train_split = 0.6  # Change to adapt to our amount of data (paper used 90% training 10% testing)
 
     num_sequences = 25
@@ -85,4 +87,4 @@ def map_to_integer(data_file : str):
 
 train_seq_data, train_labels, test_seq_data, test_labels = split_data()
 print(train_seq_data)
-print (train_labels)
+print(train_labels)
