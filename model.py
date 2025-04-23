@@ -3,42 +3,48 @@ import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
 from pathlib import Path
-from preprocessing import *
+from preprocessing import map_to_integer
 
 """"
 model assumes input sequence is of length 31000 but we mgiht need to fix that...
 embedding_dim = output_dim
+
+tbd number of seqeunces + 200 residues max 
 """
+
 class RSAProteinModel(nn.Module):
     def __init__(self, input_dim=26, embedding_dim=14, lstm_hidden=350, dropout_rate=0.4):
         super(RSAProteinModel, self).__init__()
 
+        #input_dim = 25 residues + pad, embed to 14
         self.embedding = nn.Embedding(num_embeddings=input_dim, embedding_dim=embedding_dim)
 
-        self.conv = nn.Conv2d(in_channels=1, out_channels=embedding_dim, kernel_size=(1, 10), padding=(0, 5))
-        self.pool = nn.MaxPool2d(kernel_size=(1, 20), stride=(1, 20))
+        #input channels = 14 and output channels = 14
+        self.conv = nn.Conv2d(in_channels=embedding_dim, out_channels=embedding_dim, kernel_size=(1, 10), padding=(0, 5))
+        self.pool = nn.MaxPool2d(kernel_size=(1, 10), stride=(1, 10))
 
-        self.bilstm1 = nn.LSTM(input_size=700, hidden_size=lstm_hidden, num_layers=1, 
+        # LSTM input size = 14*2
+        self.bilstm1 = nn.LSTM(input_size=28, hidden_size=lstm_hidden, num_layers=1, 
                                batch_first=True, bidirectional=True)
-        self.bilstm2 = nn.LSTM(input_size=lstm_hidden, hidden_size=lstm_hidden, num_layers=1, 
-                               batch_first=True, bidirectional=True)
+        self.bilstm2 = nn.LSTM(input_size=2*lstm_hidden, hidden_size=lstm_hidden, num_layers=1, 
+                               batch_first=True, bidirectional=True) #two bilstm of size 350
 
         self.dropout = nn.Dropout(dropout_rate)
 
         self.fc1 = nn.Linear(31 * lstm_hidden, 50)
         self.fc2 = nn.Linear(50, 20)
-        self.fc3 = nn.Linear(20, 3)
+        self.fc3 = nn.Linear(20, 9) #9 secondary structures from preprocessing
 
     def forward(self, x):
-        # x shape: (batch_size, 31000)
-        x = self.embedding(x)  # -> (batch_size, 31000, 14)
-        x = x.view(-1, 31, 1000, 14)
-        x = x.permute(0, 3, 1, 2)  # (batch, channels=14, height=31, width=1000)
-        x = F.relu(self.conv(x))
-        x = self.pool(x)  # -> (batch, channels=14, height=31, width=50)
-
-        x = x.permute(0, 2, 1, 3).contiguous()  # -> (batch, 31, 14, 50)
-        x = x.view(x.size(0), 31, -1)  # -> (batch, 31, 700)
+        # x: (batch_size, 31*max_depth=31*25=775)  -- max depth = number of sequences
+        x = self.embedding(x)  # -> (batch_size, 465, 14)
+        x = x.view(-1, 31, 25, 14) #reshape to (batch_size, 31, 25, 14)
+        x = x.permute(0, 3, 1, 2)  # (batch_size, channels=14, height=31, width=25)
+        
+        x = F.relu(self.conv(x)) # -> (batch, 14, 31, 25)
+        x = self.pool(x)  # -> (batch_size, 14, 31, 2)
+        x = x.permute(0, 2, 1, 3).contiguous()  # -> (batch, 31, 14, 2)
+        x = x.view(x.size(0), 31, -1)  # (batch, 31, 28)
 
         lstm_out1, _ = self.bilstm1(x)
         lstm_out1 = self.dropout(lstm_out1)
@@ -54,8 +60,9 @@ class RSAProteinModel(nn.Module):
         return F.log_softmax(x, dim=-1)
 
     def loss(self, predictions, labels):
-        nll_comps = -labels * torch.log(torch.clip(predictions,1e-10,1.0))
-        return torch.mean(torch.sum(nll_comps, axis=[1]))
+        # predictions: (batch_size, num_classes)
+        # labels: (batch_size, num_classes)
+        return F.nll_loss(predictions, torch.argmax(labels, dim=1))
 
     def accuracy(self, predictions, labels):
         pred_classes = torch.argmax(predictions, 1)
@@ -64,10 +71,11 @@ class RSAProteinModel(nn.Module):
         return torch.mean(torch.Tensor(correct_prediction).to(torch.float32))
         
 class MSASlidingWindowDataset(torch.utils.data.Dataset):
-    def __init__(self, msa_tensor, labels, window_size=31, max_depth=1000, pad_token=0):
+    def __init__(self, msa_tensor, labels, window_size=31, max_depth=25, pad_token=0):
         """
         msa_tensor: shape (L, Y) - raw integer-encoded MSA (1-25 for residues, 0 for padding)
         labels: shape (L, num_classes) - one-hot vectors per residue
+        max_depth: number of sequences
         """
         super().__init__()
         self.window_size = window_size
@@ -81,7 +89,7 @@ class MSASlidingWindowDataset(torch.utils.data.Dataset):
 
         msa_trimmed = msa_tensor[:, :Y]
         msa_padded = torch.full((L + 2 * pad_len, max_depth), pad_token, dtype=torch.long)
-        msa_padded[pad_len:pad_len+L, :Y] = msa_trimmed
+        msa_padded[pad_len:pad_len+L, :Y] = torch.tensor(msa_trimmed, dtype=torch.long)
 
         self.msa_padded = msa_padded
         self.length = L
@@ -98,67 +106,24 @@ class MSASlidingWindowDataset(torch.utils.data.Dataset):
 
 def main():
     #load in data
-    # Example mock inputs (you can replace with real MSA/label tensors)
-    # Suppose MSA = (L, Y) and labels = (L, num_classes)
-    L, Y = 200, 500  # e.g., 200 residues, 500 aligned sequences
-    num_classes = 4
-
-    # MSA DATA RANDOM RN NEED TO CHANGE
-    
-    # example_data_path = Path.cwd() / "preprocessed_data" / "preprocessed_data"
-
-    # train_msa = torch.zeros((L, Y), )
-    # seq_index = -1
-
-    # with open(example_data_path, 'r') as example_data:
-    #     for line in example_data:
-    #         if line.startswith('>'):
-    #             seq_index += 1
-    #             continue
-            
-    #         if seq_index >= train_msa.shape[1]:
-    #             break
-
-    #         residuals = line.split()
-    #         if len(residuals) > 200:
-    #             continue
-
-
-    #         for res_index, val in enumerate(residuals):
-    #             if res_index < train_msa.shape[0]:
-    #                 print(val)
-    #                 train_msa[res_index][seq_index] = float(val)
-
-    # EACH OF THESE TENSORS ARE OF SIZE (N, 200) ==> N represents the number of sequences
-    all_sequences, sequence_labels = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
-
-    rand_seq_indices = torch.randperm(500)
-    rand_res_indices = torch.randperm(200)
-    train_msa = train_msa[rand_res_indices][:,rand_seq_indices]
-
-    print(train_msa)
-
-    train_labels = F.one_hot(torch.randint(0, num_classes, (L,)), num_classes=num_classes).float()
-
-    test_msa = torch.randint(1, 26, (L, Y))
-    test_labels = F.one_hot(torch.randint(0, num_classes, (L,)), num_classes=num_classes).float()
+    train_msa_tensor, train_labels_tensor = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
 
     # Build datasets using the custom sliding window class
-    train_dataset = MSASlidingWindowDataset(train_msa, train_labels)
-    test_dataset = MSASlidingWindowDataset(test_msa, test_labels)
+    train_dataset = MSASlidingWindowDataset(train_msa_tensor, train_labels_tensor)
 
+    #test_dataset = MSASlidingWindowDataset(test_msa, test_labels)
 
     # dataloaders are an easy way to batch and shuffle datasets
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=1000, shuffle=True) #IMPORTANT!!!
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1000, shuffle=False)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True) #what should batch size be 
+    #test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1000, shuffle=False)
     
     #create model
     model = RSAProteinModel()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # move model to GPU if available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # model.to(device)
 
     # training loop for 5 epochs (up to 5 in paper)
     epochs = 5
@@ -169,26 +134,27 @@ def main():
             optimizer.zero_grad()
             
             # move data to device
-            input, label = input.to(device), label.to(device)
+            #input, label = input.to(device), label.to(device)
 
             y_pred = model(input)  # forward pass
+            print(f"y_pred: {y_pred}")
+            print(f"labels: {label}")
             loss = model.loss(y_pred, label)  # compute loss
             loss.backward()  # backprop
             optimizer.step()  # update weights
 
         # evaluation after epoch
-        model.eval()
-        test_acc = 0
-        with torch.no_grad():
-            for batch_idx, (input, label) in enumerate(test_loader):
-                input, label = input.to(device), label.to(device)
-                test_acc += model.accuracy(model(input), label)
+        # model.eval()
+        # test_acc = 0
+        # with torch.no_grad():
+        #     for batch_idx, (input, label) in enumerate(test_loader):
+        #         input, label = input.to(device), label.to(device)
+        #         test_acc += model.accuracy(model(input), label)
 
-        print(f"Accuracy on testing set after epoch {j+1}: {test_acc / len(test_loader):.4f}")
+        # print(f"Accuracy on testing set after epoch {j+1}: {test_acc / len(test_loader):.4f}")
 
     print()
     print(model)
-
 
 
 main()
