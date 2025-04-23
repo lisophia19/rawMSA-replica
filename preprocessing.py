@@ -10,36 +10,22 @@ ss_to_number = {'H': 1, 'E':2, 'T': 3, 'S': 4, 'G': 5, 'I':6, 'C':7, '.':8, '-':
 
 def split_data():
     sequence_data, sequence_labels = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
+    sequence_data = torch.tensor(sequence_data)
+    sequence_labels = torch.tensor(sequence_labels)
     train_split = 0.6  # Change to adapt to our amount of data (paper used 90% training 10% testing)
 
-    # train_msa = torch.zeros((L, train_split * Y))
-    # train_labels = torch.zeros((L, train_split * Y))
-
-    # test_msa = torch.zeros((L, (1-train_split) * Y))
-    # test_labels = torch.zeros((L, (1-train_split) * Y))
-    
-    num_residues = 200
     num_sequences = 25
 
-    rand_seq_indices = torch.randperm(num_sequences)
-    rand_res_indices = torch.randperm(num_residues)
+    rand_indices = torch.randperm(num_sequences)
+    sequence_data = sequence_data[:, rand_indices]
+    sequence_labels = sequence_labels[:, rand_indices]
 
-    train_split_seq_index = int(train_split * len(rand_seq_indices))
-    
-    rand_seq_train_indices = rand_seq_indices[0 : train_split_seq_index]
-    rand_seq_test_indices = rand_seq_indices[train_split_seq_index : ]
+    split_index = int(train_split * num_sequences)
 
-    # train_msa = train_msa[rand_res_train_indices][:,rand_seq_train_indices]
-    # train_labels = train_labels[rand_res_train_indices][:, rand_seq_train_indices]
-
-    # test_msa = test_msa[rand_res_test_indices][:,rand_seq_test_indices]
-    # test_labels = test_labels[rand_res_test_indices][:,rand_seq_test_indices]
-
-    train_seq_data = torch.gather(sequence_data, 1, rand_seq_train_indices)
-    train_labels = torch.gather(sequence_labels, 1, rand_seq_train_indices)
-
-    test_seq_data = torch.gather(sequence_data, 1, rand_seq_test_indices)
-    test_labels = torch.gather(sequence_labels, 1, rand_seq_test_indices)
+    train_seq_data = sequence_data[:][:split_index]
+    train_labels = sequence_labels[:][:split_index]
+    test_seq_data = sequence_data[:][split_index:]
+    test_labels = sequence_labels[:][split_index:]
 
     return train_seq_data, train_labels, test_seq_data, test_labels
     
