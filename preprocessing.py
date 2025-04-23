@@ -12,8 +12,8 @@ def split_data():
     sequence_data, sequence_labels = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
     sequence_data = torch.tensor(sequence_data)
     sequence_labels = torch.tensor(sequence_labels)
-    print(sequence_data)
-    print(sequence_labels)
+    # print(sequence_data)
+    # print(sequence_labels)
     train_split = 0.6  # Change to adapt to our amount of data (paper used 90% training 10% testing)
 
     num_sequences = sequence_data.shape[0]
@@ -37,7 +37,7 @@ def compile_tensor(line, sequence_type):
     
     count = 0
     # Represents the number of residues 
-    limit = 5
+    limit = 200
 
     current_seq = np.zeros(limit)
 
@@ -82,11 +82,11 @@ def map_to_integer(data_file : str):
     
     return np.array(all_sequences), np.array(sequence_labels)
 
-all_sequences, sequence_labels = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
-print(all_sequences.shape)
+# all_sequences, sequence_labels = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
+# print(all_sequences.shape)
 
-train_seq_data, train_labels, test_seq_data, test_labels = split_data()
-print(train_seq_data)
-print(train_labels)
-print(test_seq_data)
-print(test_labels)
+# train_seq_data, train_labels, test_seq_data, test_labels = split_data()
+# print(train_seq_data)
+# print(train_labels)
+# print(test_seq_data)
+# print(test_labels)
