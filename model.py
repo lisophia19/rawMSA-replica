@@ -55,10 +55,7 @@ class RSAProteinModel(nn.Module):
 
     def forward(self, x):
         # x: (batch_size, 31*max_depth=31*25=775)  -- max depth = number of sequences
-        x = self.embedding(x)  # -> (batch_size, 465, 14)
-
-        # print("NUM OF SEQUNECES: ", x.shape)
-        
+        x = self.embedding(x)  # -> (batch_size, 465, 14)        
         x = x.view(-1, 31, self.num_sequences, self.embedding_dim) #reshape to (batch_size, 31, 25, 14)
         x = x.permute(0, 3, 1, 2)  # (batch_size, channels=14, height=31, width=25)
         
@@ -67,8 +64,6 @@ class RSAProteinModel(nn.Module):
 
         x = x.permute(0, 2, 1, 3).contiguous()  # -> (batch, 31, 14, 2)
         x = x.view(x.size(0), 31, -1)  # (batch, 31, 28)
-
-        # print("SHAPE AFTER POOLING: ", x.shape)
 
         lstm_out1, _ = self.bilstm1(x)
         lstm_out1 = self.dropout(lstm_out1)
@@ -118,8 +113,6 @@ class MSASlidingWindowDataset(torch.utils.data.Dataset):
         msa_padded = torch.full((L + 2 * pad_len, max_depth), pad_token, dtype=torch.long)
         msa_padded[pad_len:pad_len+L, :Y] = torch.tensor(msa_trimmed, dtype=torch.long)
 
-        # print("MSA PADDED SHAPE: ", msa_padded.shape)
-
         self.msa_padded = msa_padded
         self.length = L
 
@@ -167,6 +160,8 @@ def main():
     epochs = 5
     for j in range(epochs):
         model.train()
+
+        # Train for N-total batches (i.e. 40 batches) of batch-size M (i.e. 25) for EACH family domain as well
         for item in tqdm(train_dataset, desc=f"Epoch {j+1} Training"):
             optimizer.zero_grad()   # clear gradients beforehand
 
@@ -197,7 +192,6 @@ def main():
                 labels_tensor = item[1] # Corresponds to the labels for ALL of the current sequences
                 curr_index = item[2]    # Corresponds to current index of the master sequence we are predicting for
 
-
                 y_pred = model(input_tensor)   # Outputs (1,9) vector of softmax values
 
                 # Get label at current idx for master sequence
@@ -208,6 +202,7 @@ def main():
 
                 test_acc += model.accuracy(y_pred, one_hot_actual)
 
+        # print(len(train_dataset))
         print(f"Accuracy on testing set after epoch {j+1}: {test_acc / len(train_dataset):.4f}")
 
     # for j in range(epochs):

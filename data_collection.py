@@ -41,11 +41,9 @@ def write_fasta_with_ss(sequences, sec_structs, output_path):
 def parse_all_files():
     for data_file in (Path.cwd() / "collected_data").iterdir():
         Path.unlink(data_file)
-    # lst = os.listdir(os.path.join('..', "stockholm_data"))
-    # print(lst)
-    for root, _, files in os.walk("stockholm_data"):# (Path.cwd() / "stockholm_data").iterdir():
+    for root, _, files in os.walk("full_stockholm_data"):
         for file in files:
-            seqs, ss = parse_stockholm_with_ss(os.path.join("stockholm_data", file))
+            seqs, ss = parse_stockholm_with_ss(os.path.join("full_stockholm_data", file))
 
             updated_file_name = file[0:7] + ".parsed.txt"
 
