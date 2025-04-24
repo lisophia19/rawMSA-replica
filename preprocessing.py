@@ -1,36 +1,53 @@
 # import tensorflow as tf
 import numpy as np
 from pathlib import Path
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+train_seq_dict = dict()
+train_labels_dict = dict()
+test_seq_dict = dict()
+test_labels_dict = dict()
+
 letter_to_number = { 'P':1, 'U':2, 'C':3, 'A':4, 'G':5, 'S':6, 'N':7, 'B':8, 'D':9, 'E':10, 'Z':11, 'Q':12, 'R':13, 'K':14, 'H':15, 'F':16, 'Y':17, 'W':18, 'M':19, 'L':20, 'I':21, 'V':22, 'T':23, '.':24, 'X':25 }
 ss_to_number = {'H': 1, 'E':2, 'T': 3, 'S': 4, 'G': 5, 'I':6, 'C':7, '.':8, '-':9}
 
+def batch_data(batch_num : int, file_name : str):
+    batch_size = 25
+    train_seq_data = train_seq_dict[file_name]
+    train_seq_data = train_seq_data[batch_size * batch_num : batch_size * (batch_num + 1)]
+    train_labels = train_labels[batch_size * batch_num : batch_size * (batch_num + 1)]
+
+
 def split_data():
-    sequence_data, sequence_labels = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
-    sequence_data = torch.tensor(sequence_data)
-    sequence_labels = torch.tensor(sequence_labels)
-    # print(sequence_data)
-    # print(sequence_labels)
-    train_split = 0.6  # Change to adapt to our amount of data (paper used 90% training 10% testing)
+    for data_file in (Path.cwd() / "stockholm_data").iterdir():
+        sequence_data, sequence_labels = map_to_integer(os.data_file)
 
-    num_sequences = sequence_data.shape[0]
+        sequence_data = torch.tensor(sequence_data)
+        sequence_labels = torch.tensor(sequence_labels)
 
-    rand_indices = torch.randperm(num_sequences)
-    sequence_data = sequence_data[rand_indices, :]
-    sequence_labels = sequence_labels[rand_indices, :]
+        train_split = 0.9
+        
+        num_sequences = sequence_data.shape[0]
 
-    split_index = int(train_split * num_sequences)
+        rand_indices = torch.randperm(num_sequences)
+        sequence_data = sequence_data[rand_indices, :]
+        sequence_labels = sequence_labels[rand_indices, :]
 
-    train_seq_data = sequence_data[:split_index][:]
-    train_labels = sequence_labels[:split_index][:]
-    test_seq_data = sequence_data[split_index:][:]
-    test_labels = sequence_labels[split_index:][:]
+        split_index = int(train_split * num_sequences)
 
-    return train_seq_data, train_labels, test_seq_data, test_labels
-    
+        train_seq_data = sequence_data[:split_index][:]
+        train_labels = sequence_labels[:split_index][:]
+        test_seq_data = sequence_data[split_index:][:]
+        test_labels = sequence_labels[split_index:][:]
+
+        train_seq_dict[data_file.name] = train_seq_data
+        train_labels_dict[data_file.name] = train_labels
+        test_seq_dict[data_file.name] = test_seq_data
+        test_labels_dict[data_file.name] = test_labels
+
 
 def compile_tensor(line, sequence_type):
     line = line.rstrip()
