@@ -15,7 +15,7 @@ letter_to_number = { 'P':1, 'U':2, 'C':3, 'A':4, 'G':5, 'S':6, 'N':7, 'B':8, 'D'
 ss_to_number = {'H': 1, 'E':2, 'T': 3, 'S': 4, 'G': 5, 'I':6, 'C':7, '.':8, '-':9}
 
 def batch_data(batch_num : int, file_name : str):
-    batch_size = 25
+    batch_size = 2
     train_seq_data = train_seq_dict[file_name]
     train_labels = train_labels_dict[file_name]
 
@@ -28,8 +28,6 @@ def batch_data(batch_num : int, file_name : str):
 def split_data():
     for data_file in (Path.cwd() / "collected_data").iterdir():
         sequence_data, sequence_labels = map_to_integer(data_file)
-        print(sequence_data.shape)
-        print(sequence_labels.shape)
 
         sequence_data = torch.tensor(sequence_data)
         sequence_labels = torch.tensor(sequence_labels)
@@ -109,12 +107,3 @@ def map_to_integer(data_file : str):
 # print(all_sequences.shape)
 
 split_data()
-print(train_seq_dict["PF00069.parsed.txt"])
-print(train_labels_dict["PF00069.parsed.txt"])
-seq_batch, labels_batch = batch_data(1, "PF00069.parsed.txt")
-print(seq_batch)
-print(labels_batch)
-# print(train_seq_data)
-# print(train_labels)
-# print(test_seq_data)
-# print(test_labels)
