@@ -129,6 +129,11 @@ class MSASlidingWindowDataset(torch.utils.data.Dataset):
    
 
 def main():
+    # Master Sequences: Dictionary of sets
+    # Key: Family ID, Value: Set
+    # Pull a random Master sequence from the current domain
+
+
     #load in data of size N x L;
     # N = number of sequences
     # L = length of each sequence
@@ -204,35 +209,6 @@ def main():
 
         # print(len(train_dataset))
         print(f"Accuracy on testing set after epoch {j+1}: {test_acc / len(train_dataset):.4f}")
-
-    # for j in range(epochs):
-    #     model.train()
-    #     for batch_idx, (input, label, idx) in tqdm(enumerate(train_loader), desc=f"Epoch {j+1} Training"):
-    #     # for input, label in tqdm(train_dataset, desc=f"Epoch {j+1} Training"):
-    #         optimizer.zero_grad()   # Clear gradients before iteration
-            
-            # move data to device
-            #input, label = input.to(device), label.to(device)
-            
-            # y_pred = model(input)  # forward pass ==> softmax values
-            # print(label.shape)
-            # print(idx.shape)
-
-            # loss = model.loss(y_pred, label)  # compute loss
-            # loss.backward()  # backprop
-            # optimizer.step()  # update weights
-
-        # evaluation after epoch
-        # model.eval()
-        # test_acc = 0
-        # with torch.no_grad():
-        #     for batch_idx, (input, label) in enumerate(test_loader):
-        #         input, label = input.to(device), label.to(device)
-        #         test_acc += model.accuracy(model(input), label)
-
-        # print(f"Accuracy on testing set after epoch {j+1}: {test_acc / len(test_loader):.4f}")
-
-
 
     print()
     print(model)

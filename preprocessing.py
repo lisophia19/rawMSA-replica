@@ -14,6 +14,10 @@ test_labels_dict = dict()
 letter_to_number = { 'P':1, 'U':2, 'C':3, 'A':4, 'G':5, 'S':6, 'N':7, 'B':8, 'D':9, 'E':10, 'Z':11, 'Q':12, 'R':13, 'K':14, 'H':15, 'F':16, 'Y':17, 'W':18, 'M':19, 'L':20, 'I':21, 'V':22, 'T':23, '.':24, 'X':25 }
 ss_to_number = {'H': 1, 'E':2, 'T': 3, 'S': 4, 'G': 5, 'I':6, 'C':7, '.':8, '-':9}
 
+
+def gather_master_sequences(file_name : str):
+    
+
 def batch_data(batch_num : int, file_name : str):
     batch_size = 25
     train_seq_data = train_seq_dict[file_name]
@@ -25,32 +29,32 @@ def batch_data(batch_num : int, file_name : str):
     return seq_batch, labels_batch
 
 
-def split_data():
-    for data_file in (Path.cwd() / "train_data" / "collected_train_data").iterdir():
-        sequence_data, sequence_labels = map_to_integer(data_file)
+# def split_data():
+#     for data_file in (Path.cwd() / "train_data" / "collected_train_data").iterdir():
+#         sequence_data, sequence_labels = map_to_integer(data_file)
 
-        sequence_data = torch.tensor(sequence_data)
-        sequence_labels = torch.tensor(sequence_labels)
+#         sequence_data = torch.tensor(sequence_data)
+#         sequence_labels = torch.tensor(sequence_labels)
 
-        # train_split = 0.9
+#         # train_split = 0.9
         
-        num_sequences = sequence_data.shape[0]
+#         num_sequences = sequence_data.shape[0]
 
-        rand_indices = torch.randperm(num_sequences)
-        sequence_data = sequence_data[rand_indices, :]
-        sequence_labels = sequence_labels[rand_indices, :]
+#         rand_indices = torch.randperm(num_sequences)
+#         sequence_data = sequence_data[rand_indices, :]
+#         sequence_labels = sequence_labels[rand_indices, :]
 
-        # split_index = int(train_split * num_sequences)
+#         # split_index = int(train_split * num_sequences)
 
-        # # train_seq_data = sequence_data[:split_index][:]
-        # # train_labels = sequence_labels[:split_index][:]
-        # # test_seq_data = sequence_data[split_index:][:]
-        # # test_labels = sequence_labels[split_index:][:]
+#         # # train_seq_data = sequence_data[:split_index][:]
+#         # # train_labels = sequence_labels[:split_index][:]
+#         # # test_seq_data = sequence_data[split_index:][:]
+#         # # test_labels = sequence_labels[split_index:][:]
 
-        train_seq_dict[data_file.name] = train_seq_data
-        train_labels_dict[data_file.name] = train_labels
-        test_seq_dict[data_file.name] = test_seq_data
-        test_labels_dict[data_file.name] = test_labels
+#         train_seq_dict[data_file.name] = train_seq_data
+#         train_labels_dict[data_file.name] = train_labels
+#         test_seq_dict[data_file.name] = test_seq_data
+#         test_labels_dict[data_file.name] = test_labels
 
 
 def compile_tensor(line, sequence_type):
