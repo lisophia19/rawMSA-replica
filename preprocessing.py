@@ -1,66 +1,40 @@
 # import tensorflow as tf
+import torch
 import numpy as np
 from pathlib import Path
 import os
 from collections import defaultdict
 
 
-train_seq_dict = dict()
-# train_labels_dict = dict()
-test_seq_dict = dict()
+# train_seq_dict = dict()
+# # train_labels_dict = dict()
+# test_seq_dict = dict()
 # test_labels_dict = dict()
 
 letter_to_number = { 'P':1, 'U':2, 'C':3, 'A':4, 'G':5, 'S':6, 'N':7, 'B':8, 'D':9, 'E':10, 'Z':11, 'Q':12, 'R':13, 'K':14, 'H':15, 'F':16, 'Y':17, 'W':18, 'M':19, 'L':20, 'I':21, 'V':22, 'T':23, '.':24, 'X':25 }
 ss_to_number = {'H': 1, 'E':2, 'T': 3, 'S': 4, 'G': 5, 'I':6, 'C':7, '.':8, '-':9}
     
 
-def batch_data(batch_num : int, file_name : str):
-    batch_size = 25
-    train_seq_data = train_seq_dict[file_name]
-    train_labels = train_labels_dict[file_name]
+def batch_train_data(train_seq_dict, batch_num : int, file_id : str):
+    batch_size = 15
+    train_seq_data = train_seq_dict[file_id]
+    #train_labels = train_labels_dict[file_name]
 
     seq_batch = train_seq_data[batch_size * batch_num : batch_size * (batch_num + 1)][:]
-    labels_batch = train_labels[batch_size * batch_num : batch_size * (batch_num + 1)][:]
+    #labels_batch = train_labels[batch_size * batch_num : batch_size * (batch_num + 1)][:]
 
-    return seq_batch, labels_batch
+    return seq_batch
 
 
-def split_data():
-    for train_file in (Path.cwd() / "train_data" / "collected_train_data").iterdir():
-        train_seq_data, train_labels = map_to_integer(train_file)
+def batch_testdata(test_seq_dict, batch_num : int, file_id : str):
+    batch_size = 15
+    test_seq_data = test_seq_dict[file_id]
+    #train_labels = train_labels_dict[file_name]
 
-        train_seq_data = torch.tensor(train_seq_data)
-        train_labels = torch.tensor(train_labels)
+    seq_batch = test_seq_data[batch_size * batch_num : batch_size * (batch_num + 1)][:]
+    #labels_batch = train_labels[batch_size * batch_num : batch_size * (batch_num + 1)][:]
 
-        num_sequences = train_seq_data.shape[0]
-        rand_indices = torch.randperm(num_sequences)
-        train_seq_data = train_seq_data[rand_indices, :]
-        train_labels = train_labels[rand_indices, :]
-
-        # split_index = int(train_split * num_sequences)
-        # train_split = 0.9
-        # train_seq_data = sequence_data[:split_index][:]
-        # train_labels = sequence_labels[:split_index][:]
-        # test_seq_data = sequence_data[split_index:][:]
-        # test_labels = sequence_labels[split_index:][:]
-
-        train_seq_dict[train_file.name] = train_seq_data
-        train_labels_dict[train_file.name] = train_labels
-
-    for test_file in (Path.cwd() / "test_data" / "collected_test_data").iterdir():
-        test_seq_data, test_labels = map_to_integer(test_file)
-
-        test_seq_data = torch.tensor(test_seq_data)
-        test_labels = torch.tensor(test_labels)
-
-        num_sequences = test_seq_data.shape[0]
-        rand_indices = torch.randperm(num_sequences)
-        test_seq_data = test_seq_data[rand_indices, :]
-        test_labels = test_labels[rand_indices, :]
-
-        test_seq_dict[test_file.name] = test_seq_data
-        test_labels_dict[test_file.name] = test_labels
-
+    return seq_batch
 
 def compile_tensor(line, sequence_type):
     line = line.rstrip()
@@ -117,12 +91,13 @@ def gather_master_sequences(all_files : list[str], data_type = "train"):
     master_seq_dict = dict()
 
     if len(all_files) == 0:
-        for file_name in os.listdir(os.path.join(f"{data_type}_data", "collected_master_sequences", file_name)):
+        for file_name in os.listdir(os.path.join(f"{data_type}_data", "collected_master_sequences")):
             file_id = file_name[0:7]
 
             file_path = os.path.join(f"{data_type}_data", "collected_master_sequences", file_name)
 
             master_seq, seq_labels = map_to_integer(file_path)
+
             master_seq_dict[file_id] = (master_seq, seq_labels)
     else:
         for file_name in all_files:
@@ -135,13 +110,39 @@ def gather_master_sequences(all_files : list[str], data_type = "train"):
 
     return master_seq_dict
 
+def gather_body_sequences():
+    min_number_body_seq = -1
+
+    train_seq_dict = dict()
+    test_seq_dict = dict()
+    #training data collection
+    for data_file in os.listdir(os.path.join("train_data","collected_body_sequences")):
+        file_path = os.path.join("train_data","collected_body_sequences", data_file)
+        sequence_data, _ = map_to_integer(file_path)
+        sequence_data_tensor = torch.tensor(sequence_data)
+
+        file_id = data_file[0:7]
+        train_seq_dict[file_id] = sequence_data_tensor
+
+
+        if min_number_body_seq == -1:
+            min_number_body_seq = len(sequence_data)
+        else:
+            min_number_body_seq = min(min_number_body_seq, len(sequence_data))
+
+    #testing data collection
+    # for data_file in os.listdir(os.path.join("test_data","collected_body_sequences")):
+    #     file_path = os.path.join("test_data","collected_body_sequences", data_file)
+    #     sequence_data, _ = map_to_integer(file_path)
+    #     sequence_data = torch.tensor(sequence_data)
+
+    #     file_id = data_file[0:7]
+    #     test_seq_dict[file_id] = sequence_data
+
+    return train_seq_dict, test_seq_dict, min_number_body_seq
+
 # print(gather_master_sequences(["PF00018.master.txt"]))
+# train_seq_dict, test_seq_dict, min_number_body_seq = gather_body_sequences()
+# min_num_batches = min_number_body_seq // 15
+# print(min_number_body_seq)
 
-
-
-    
-
-split_data()
-seq_batch, labels_batch = batch_data(1, "PF00069.parsed.txt")
-# print(seq_batch.shape)
-# print(labels_batch.shape)

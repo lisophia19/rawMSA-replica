@@ -6,6 +6,7 @@ from pathlib import Path
 from preprocessing import *
 import os
 import numpy as np
+import random
 
 """"
 model assumes input sequence is of length 31000 but we mgiht need to fix that...
@@ -133,85 +134,135 @@ def main():
     # Master Sequences: Dictionary of list (tuple of tensors)
     # Key: Family ID, Value: list
     # Pull a random Master sequence from the current domain
-    train_master_seq_dict = gather_master_sequences()
-    test_master_seq_dict = gather_master_sequences(data_type="test")
+    train_master_seq_dict = gather_master_sequences([])
+    # test_master_seq_dict = gather_master_sequences([], data_type="test")
+
+    train_body_seq_dict, test_body_seq_dict, min_number_body_seq = gather_body_sequences()
+
+    # num_batches = min_number_body_seq // 15
 
     #load in data of size N x L;
     # N = number of sequences
     # L = length of each sequence
     # train_msa_tensor, train_labels_tensor = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
-    train_msa_tensor, train_labels_tensor = map_to_integer(os.path.join("collected_data", "PF00071.parsed.txt"))
-    train_msa_tensor = torch.from_numpy(np.array(train_msa_tensor).T).long()
-    train_labels_tensor = torch.from_numpy(np.array(train_labels_tensor).T)
-
-    # Build datasets using the custom sliding window class
-    train_dataset = MSASlidingWindowDataset(train_msa_tensor, train_labels_tensor, max_depth=train_msa_tensor.shape[1])
-
-    #test_dataset = MSASlidingWindowDataset(test_msa, test_labels)
-
-    # dataloaders are an easy way to batch and shuffle datasets
-    # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True) #what should batch size be 
-    #test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1000, shuffle=False)
+    # train_msa_tensor, train_labels_tensor = map_to_integer(os.path.join("collected_data", "PF00071.parsed.txt"))
     
-    #create model
-    model = RSAProteinModel(num_sequences=train_msa_tensor.shape[1])
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    training_inputs = []
+    training_labels = []
+    for family_id in train_body_seq_dict.keys():
+        total_seq_len = len(train_body_seq_dict[family_id])
+        num_batches = total_seq_len // 14
 
-    # move model to GPU if available
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # model.to(device)
+        for batch_num in range(num_batches):
+            # inputs_temp, labels_temp = [], []
 
-    # training loop for 5 epochs (up to 5 in paper)
-    epochs = 5
-    for j in range(epochs):
-        model.train()
+            curr_master_seqs = train_master_seq_dict[family_id]
+            num_master_seqs = len(curr_master_seqs[0][0])
 
-        # Train for N-total batches (i.e. 40 batches) of batch-size M (i.e. 25) for EACH family domain as well
-        for item in tqdm(train_dataset, desc=f"Epoch {j+1} Training"):
-            optimizer.zero_grad()   # clear gradients beforehand
+            # print(curr_master_seqs)
 
-            input_tensor = item[0]  # corresponds to the input_tensor for the current sliding window
-            labels_tensor = item[1] # Corresponds to the labels for ALL of the current sequences
-            curr_index = item[2]    # Corresponds to current index of the master sequence we are predicting for
+            # print(num_master_seqs)
+            random_index = random.randrange(0, num_master_seqs)
+
+            # print(random_index)
+
+            master_seq = curr_master_seqs[0][random_index]
+            master_seq_label = curr_master_seqs[1][random_index]
+
+            # inputs_temp.append(master_seq)
+            # inputs_temp.append(batch_train_data(train_body_seq_dict, batch_num, family_id))
+
+            # labels_temp.append(master_seq_label)
+
+            # training_inputs.append(inputs_temp)
+            training_inputs.append(master_seq)
+            training_inputs.append(batch_train_data(train_body_seq_dict, batch_num, family_id))
+
+            training_labels.append(master_seq_label)
+
+            print(type(master_seq))
+        
+    
+
+    training_inputs = np.array(training_inputs).T
+    training_labels = np.array(training_labels).T
+
+    print(training_inputs.shape)
+    print(training_labels.shape)
 
 
-            y_pred = model(input_tensor)   # Outputs (1,9) vector of softmax values
+    
+    # train_msa_tensor = torch.from_numpy(np.array(train_msa_tensor).T).long()
+    # train_labels_tensor = torch.from_numpy(np.array(train_labels_tensor).T)
 
-            # Get label at current idx for master sequence
-            actual_label = int(labels_tensor[0].item())
-            # print("ACTUAL LABEL: ",actual_label)
-            one_hot_actual = torch.zeros((1, 9))
-            one_hot_actual[:, actual_label-1] = 1
+    # # Build datasets using the custom sliding window class
+    # train_dataset = MSASlidingWindowDataset(train_msa_tensor, train_labels_tensor, max_depth=train_msa_tensor.shape[1])
 
-            loss = model.loss(y_pred, one_hot_actual)
-            loss.backward()
-            optimizer.step()
-            # evaluation after epoch
+    # #test_dataset = MSASlidingWindowDataset(test_msa, test_labels)
 
-        model.eval()
-        test_acc = 0
-        with torch.no_grad():
-            for item in train_dataset:
-                # input, label = input.to(device), label.to(device)
-                input_tensor = item[0]  # corresponds to the input_tensor for the current sliding window
-                labels_tensor = item[1] # Corresponds to the labels for ALL of the current sequences
-                curr_index = item[2]    # Corresponds to current index of the master sequence we are predicting for
+    # # dataloaders are an easy way to batch and shuffle datasets
+    # # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True) #what should batch size be 
+    # #test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1000, shuffle=False)
+    
+    # #create model
+    # model = RSAProteinModel(num_sequences=train_msa_tensor.shape[1])
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-                y_pred = model(input_tensor)   # Outputs (1,9) vector of softmax values
+    # # move model to GPU if available
+    # # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # # model.to(device)
 
-                # Get label at current idx for master sequence
-                actual_label = int(labels_tensor[0].item())
-                # print("ACTUAL LABEL: ",actual_label)
-                one_hot_actual = torch.zeros((1, 9))
-                one_hot_actual[:, actual_label-1] = 1
+    # # training loop for 5 epochs (up to 5 in paper)
+    # epochs = 5
+    # for j in range(epochs):
+    #     model.train()
 
-                test_acc += model.accuracy(y_pred, one_hot_actual)
+    #     # Train for N-total batches (i.e. 40 batches) of batch-size M (i.e. 25) for EACH family domain as well
+    #     for item in tqdm(train_dataset, desc=f"Epoch {j+1} Training"):
+    #         optimizer.zero_grad()   # clear gradients beforehand
 
-        # print(len(train_dataset))
-        print(f"Accuracy on testing set after epoch {j+1}: {test_acc / len(train_dataset):.4f}")
+    #         input_tensor = item[0]  # corresponds to the input_tensor for the current sliding window
+    #         labels_tensor = item[1] # Corresponds to the labels for ALL of the current sequences
+    #         curr_index = item[2]    # Corresponds to current index of the master sequence we are predicting for
 
-    print()
-    print(model)
+
+    #         y_pred = model(input_tensor)   # Outputs (1,9) vector of softmax values
+
+    #         # Get label at current idx for master sequence
+    #         actual_label = int(labels_tensor[0].item())
+    #         # print("ACTUAL LABEL: ",actual_label)
+    #         one_hot_actual = torch.zeros((1, 9))
+    #         one_hot_actual[:, actual_label-1] = 1
+
+    #         loss = model.loss(y_pred, one_hot_actual)
+    #         loss.backward()
+    #         optimizer.step()
+    #         # evaluation after epoch
+
+    #     model.eval()
+    #     test_acc = 0
+    #     with torch.no_grad():
+    #         for item in train_dataset:
+    #             # input, label = input.to(device), label.to(device)
+    #             input_tensor = item[0]  # corresponds to the input_tensor for the current sliding window
+    #             labels_tensor = item[1] # Corresponds to the labels for ALL of the current sequences
+    #             curr_index = item[2]    # Corresponds to current index of the master sequence we are predicting for
+
+    #             y_pred = model(input_tensor)   # Outputs (1,9) vector of softmax values
+
+    #             # Get label at current idx for master sequence
+    #             actual_label = int(labels_tensor[0].item())
+    #             # print("ACTUAL LABEL: ",actual_label)
+    #             one_hot_actual = torch.zeros((1, 9))
+    #             one_hot_actual[:, actual_label-1] = 1
+
+    #             test_acc += model.accuracy(y_pred, one_hot_actual)
+
+    #     # print(len(train_dataset))
+    #     print(f"Accuracy on testing set after epoch {j+1}: {test_acc / len(train_dataset):.4f}")
+
+    # print()
+    # print(model)
 
 
 main()
