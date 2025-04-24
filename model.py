@@ -144,8 +144,6 @@ def main():
     train_msa_tensor = torch.from_numpy(np.array(train_msa_tensor).T).long()
     train_labels_tensor = torch.from_numpy(np.array(train_labels_tensor).T)
 
-    print(train_labels_tensor.shape)
-
     # Build datasets using the custom sliding window class
     train_dataset = MSASlidingWindowDataset(train_msa_tensor, train_labels_tensor, max_depth=train_msa_tensor.shape[1])
 

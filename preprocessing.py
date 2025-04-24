@@ -25,32 +25,41 @@ def batch_data(batch_num : int, file_name : str):
     return seq_batch, labels_batch
 
 
-# def split_data():
-#     for data_file in (Path.cwd() / "train_data" / "collected_train_data").iterdir():
-#         sequence_data, sequence_labels = map_to_integer(data_file)
+def split_data():
+    for train_file in (Path.cwd() / "train_data" / "collected_train_data").iterdir():
+        train_seq_data, train_labels = map_to_integer(train_file)
 
-#         sequence_data = torch.tensor(sequence_data)
-#         sequence_labels = torch.tensor(sequence_labels)
+        train_seq_data = torch.tensor(train_seq_data)
+        train_labels = torch.tensor(train_labels)
 
-#         # train_split = 0.9
-        
-#         num_sequences = sequence_data.shape[0]
+        num_sequences = train_seq_data.shape[0]
+        rand_indices = torch.randperm(num_sequences)
+        train_seq_data = train_seq_data[rand_indices, :]
+        train_labels = train_labels[rand_indices, :]
 
-#         rand_indices = torch.randperm(num_sequences)
-#         sequence_data = sequence_data[rand_indices, :]
-#         sequence_labels = sequence_labels[rand_indices, :]
+        # split_index = int(train_split * num_sequences)
+        # train_split = 0.9
+        # train_seq_data = sequence_data[:split_index][:]
+        # train_labels = sequence_labels[:split_index][:]
+        # test_seq_data = sequence_data[split_index:][:]
+        # test_labels = sequence_labels[split_index:][:]
 
-#         # split_index = int(train_split * num_sequences)
+        train_seq_dict[train_file.name] = train_seq_data
+        train_labels_dict[train_file.name] = train_labels
 
-#         # # train_seq_data = sequence_data[:split_index][:]
-#         # # train_labels = sequence_labels[:split_index][:]
-#         # # test_seq_data = sequence_data[split_index:][:]
-#         # # test_labels = sequence_labels[split_index:][:]
+    for test_file in (Path.cwd() / "test_data" / "collected_test_data").iterdir():
+        test_seq_data, test_labels = map_to_integer(test_file)
 
-#         train_seq_dict[data_file.name] = train_seq_data
-#         train_labels_dict[data_file.name] = train_labels
-#         test_seq_dict[data_file.name] = test_seq_data
-#         test_labels_dict[data_file.name] = test_labels
+        test_seq_data = torch.tensor(test_seq_data)
+        test_labels = torch.tensor(test_labels)
+
+        num_sequences = test_seq_data.shape[0]
+        rand_indices = torch.randperm(num_sequences)
+        test_seq_data = test_seq_data[rand_indices, :]
+        test_labels = test_labels[rand_indices, :]
+
+        test_seq_dict[test_file.name] = test_seq_data
+        test_labels_dict[test_file.name] = test_labels
 
 
 def compile_tensor(line, sequence_type):
@@ -132,4 +141,7 @@ def gather_master_sequences(all_files : list[str], data_type = "train"):
 
     
 
-
+split_data()
+seq_batch, labels_batch = batch_data(1, "PF00069.parsed.txt")
+# print(seq_batch.shape)
+# print(labels_batch.shape)
