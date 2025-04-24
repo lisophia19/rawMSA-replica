@@ -154,14 +154,11 @@ def main():
         num_batches = total_seq_len // 14
 
         for batch_num in range(num_batches):
-            # inputs_temp, labels_temp = [], []
-
             curr_master_seqs = train_master_seq_dict[family_id]
-            num_master_seqs = len(curr_master_seqs[0][0])
+            num_master_seqs = len(curr_master_seqs[0])
 
-            # print(curr_master_seqs)
+            # print(f"Number of Master Sequences for PID: {family_id}: ",  num_master_seqs)
 
-            # print(num_master_seqs)
             random_index = random.randrange(0, num_master_seqs)
 
             # print(random_index)
@@ -169,19 +166,26 @@ def main():
             master_seq = curr_master_seqs[0][random_index]
             master_seq_label = curr_master_seqs[1][random_index]
 
+            # print(master_seq)
+
             # inputs_temp.append(master_seq)
             # inputs_temp.append(batch_train_data(train_body_seq_dict, batch_num, family_id))
 
             # labels_temp.append(master_seq_label)
 
             # training_inputs.append(inputs_temp)
+
+            batch_data = batch_train_data(train_body_seq_dict, batch_num, family_id)
+
+            # print(batch_data)
+
             training_inputs.append(master_seq)
-            training_inputs.append(batch_train_data(train_body_seq_dict, batch_num, family_id))
+            training_inputs += batch_train_data(train_body_seq_dict, batch_num, family_id)
 
             training_labels.append(master_seq_label)
 
-            print(type(master_seq))
-        
+            # print(type(master_seq))
+
     
 
     training_inputs = np.array(training_inputs).T

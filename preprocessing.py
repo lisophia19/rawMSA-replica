@@ -16,7 +16,7 @@ ss_to_number = {'H': 1, 'E':2, 'T': 3, 'S': 4, 'G': 5, 'I':6, 'C':7, '.':8, '-':
     
 
 def batch_train_data(train_seq_dict, batch_num : int, file_id : str):
-    batch_size = 15
+    batch_size = 14
     train_seq_data = train_seq_dict[file_id]
     #train_labels = train_labels_dict[file_name]
 
@@ -27,7 +27,7 @@ def batch_train_data(train_seq_dict, batch_num : int, file_id : str):
 
 
 def batch_testdata(test_seq_dict, batch_num : int, file_id : str):
-    batch_size = 15
+    batch_size = 14
     test_seq_data = test_seq_dict[file_id]
     #train_labels = train_labels_dict[file_name]
 
@@ -98,6 +98,8 @@ def gather_master_sequences(all_files : list[str], data_type = "train"):
 
             master_seq, seq_labels = map_to_integer(file_path)
 
+            # print(len(master_seq))
+
             master_seq_dict[file_id] = (master_seq, seq_labels)
     else:
         for file_name in all_files:
@@ -107,6 +109,9 @@ def gather_master_sequences(all_files : list[str], data_type = "train"):
 
             master_seq, seq_labels = map_to_integer(file_path)
             master_seq_dict[file_id] = (master_seq, seq_labels)
+
+            # print(master_seq_dict[file_id])
+
 
     return master_seq_dict
 
@@ -141,7 +146,7 @@ def gather_body_sequences():
 
     return train_seq_dict, test_seq_dict, min_number_body_seq
 
-# print(gather_master_sequences(["PF00018.master.txt"]))
+gather_master_sequences(["PF00018.master.txt"])
 # train_seq_dict, test_seq_dict, min_number_body_seq = gather_body_sequences()
 # min_num_batches = min_number_body_seq // 15
 # print(min_number_body_seq)
