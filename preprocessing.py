@@ -17,13 +17,19 @@ ss_to_number = {'H': 1, 'E':2, 'T': 3, 'S': 4, 'G': 5, 'I':6, 'C':7, '.':8, '-':
 def batch_data(batch_num : int, file_name : str):
     batch_size = 25
     train_seq_data = train_seq_dict[file_name]
-    train_seq_data = train_seq_data[batch_size * batch_num : batch_size * (batch_num + 1)]
-    train_labels = train_labels[batch_size * batch_num : batch_size * (batch_num + 1)]
+    train_labels = train_labels_dict[file_name]
+
+    seq_batch = train_seq_data[batch_size * batch_num : batch_size * (batch_num + 1)][:]
+    labels_batch = train_labels[batch_size * batch_num : batch_size * (batch_num + 1)][:]
+
+    return seq_batch, labels_batch
 
 
 def split_data():
-    for data_file in (Path.cwd() / "stockholm_data").iterdir():
-        sequence_data, sequence_labels = map_to_integer(os.data_file)
+    for data_file in (Path.cwd() / "collected_data").iterdir():
+        sequence_data, sequence_labels = map_to_integer(data_file)
+        print(sequence_data.shape)
+        print(sequence_labels.shape)
 
         sequence_data = torch.tensor(sequence_data)
         sequence_labels = torch.tensor(sequence_labels)
@@ -102,7 +108,12 @@ def map_to_integer(data_file : str):
 # all_sequences, sequence_labels = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
 # print(all_sequences.shape)
 
-# train_seq_data, train_labels, test_seq_data, test_labels = split_data()
+split_data()
+print(train_seq_dict["PF00069.parsed.txt"])
+print(train_labels_dict["PF00069.parsed.txt"])
+seq_batch, labels_batch = batch_data(1, "PF00069.parsed.txt")
+print(seq_batch)
+print(labels_batch)
 # print(train_seq_data)
 # print(train_labels)
 # print(test_seq_data)
