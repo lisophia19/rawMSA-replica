@@ -26,13 +26,13 @@ def batch_data(batch_num : int, file_name : str):
 
 
 def split_data():
-    for data_file in (Path.cwd() / "collected_data").iterdir():
+    for data_file in (Path.cwd() / "train_data" / "collected_train_data").iterdir():
         sequence_data, sequence_labels = map_to_integer(data_file)
 
         sequence_data = torch.tensor(sequence_data)
         sequence_labels = torch.tensor(sequence_labels)
 
-        train_split = 0.9
+        # train_split = 0.9
         
         num_sequences = sequence_data.shape[0]
 
@@ -42,10 +42,10 @@ def split_data():
 
         split_index = int(train_split * num_sequences)
 
-        train_seq_data = sequence_data[:split_index][:]
-        train_labels = sequence_labels[:split_index][:]
-        test_seq_data = sequence_data[split_index:][:]
-        test_labels = sequence_labels[split_index:][:]
+        # train_seq_data = sequence_data[:split_index][:]
+        # train_labels = sequence_labels[:split_index][:]
+        # test_seq_data = sequence_data[split_index:][:]
+        # test_labels = sequence_labels[split_index:][:]
 
         train_seq_dict[data_file.name] = train_seq_data
         train_labels_dict[data_file.name] = train_labels

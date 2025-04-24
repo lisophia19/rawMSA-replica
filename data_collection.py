@@ -43,7 +43,7 @@ def parse_all_files():
         Path.unlink(data_file)
     # lst = os.listdir(os.path.join('..', "stockholm_data"))
     # print(lst)
-    for root, _, files in os.walk("stockholm_data"):# (Path.cwd() / "stockholm_data").iterdir():
+    for root, _, files in os.walk("stockholm__data"):# (Path.cwd() / "stockholm_data").iterdir():
         for file in files:
             seqs, ss = parse_stockholm_with_ss(os.path.join("stockholm_data", file))
 
