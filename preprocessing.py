@@ -15,7 +15,7 @@ letter_to_number = { 'P':1, 'U':2, 'C':3, 'A':4, 'G':5, 'S':6, 'N':7, 'B':8, 'D'
 ss_to_number = {'H': 1, 'E':2, 'T': 3, 'S': 4, 'G': 5, 'I':6, 'C':7, '.':8, '-':9}
 
 def batch_data(batch_num : int, file_name : str):
-    batch_size = 2
+    batch_size = 25
     train_seq_data = train_seq_dict[file_name]
     train_labels = train_labels_dict[file_name]
 
@@ -40,12 +40,12 @@ def split_data():
         sequence_data = sequence_data[rand_indices, :]
         sequence_labels = sequence_labels[rand_indices, :]
 
-        split_index = int(train_split * num_sequences)
+        # split_index = int(train_split * num_sequences)
 
-        # train_seq_data = sequence_data[:split_index][:]
-        # train_labels = sequence_labels[:split_index][:]
-        # test_seq_data = sequence_data[split_index:][:]
-        # test_labels = sequence_labels[split_index:][:]
+        # # train_seq_data = sequence_data[:split_index][:]
+        # # train_labels = sequence_labels[:split_index][:]
+        # # test_seq_data = sequence_data[split_index:][:]
+        # # test_labels = sequence_labels[split_index:][:]
 
         train_seq_dict[data_file.name] = train_seq_data
         train_labels_dict[data_file.name] = train_labels
@@ -66,12 +66,12 @@ def compile_tensor(line, sequence_type):
 
     while count < limit:
         if count >= line_len:
-            current_seq[count] = 25 if sequence_type == 'SEQUENCE' else 10
+            current_seq[count] = 25 if sequence_type == 'SEQUENCE' else 9
         else:
             try:
                 number = letter_to_number[line[count]] if sequence_type == 'SEQUENCE' else ss_to_number[line[count]]
             except KeyError:
-                number = 25 if sequence_type == 'SEQUENCE' else 10
+                number = 25 if sequence_type == 'SEQUENCE' else 9
 
             current_seq[count] = number
         count += 1
@@ -107,3 +107,5 @@ def map_to_integer(data_file : str):
 # print(all_sequences.shape)
 
 split_data()
+
+print(batch_data)
