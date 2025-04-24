@@ -1,4 +1,5 @@
 # import tensorflow as tf
+import torch
 import numpy as np
 from pathlib import Path
 import os
@@ -126,7 +127,29 @@ def gather_master_sequences(all_files : list[str], data_type = "train"):
 
     return master_seq_dict
 
+def gather_body_sequences():
+    #training data collection
+    for data_file in os.listdir(os.path.join("train_data","collected_body_sequences")):
+        file_path = os.path.join("train_data","collected_body_sequences", data_file)
+        sequence_data, _ = map_to_integer(file_path)
+        sequence_data = torch.tensor(sequence_data)
+
+        file_id = data_file[0:7]
+        train_seq_dict[file_id] = sequence_data
+
+    #testing data collection
+    # for data_file in os.listdir(os.path.join("test_data","collected_body_sequences")):
+    #     file_path = os.path.join("test_data","collected_body_sequences", data_file)
+    #     sequence_data, _ = map_to_integer(file_path)
+    #     sequence_data = torch.tensor(sequence_data)
+
+    #     file_id = data_file[0:7]
+    #     test_seq_dict[file_id] = sequence_data
+
+    return train_seq_dict, test_seq_dict
+
 # print(gather_master_sequences(["PF00018.master.txt"]))
+print(gather_body_sequences())
 
 
 
