@@ -2,20 +2,16 @@
 import numpy as np
 from pathlib import Path
 import os
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+from collections import defaultdict
+
 
 train_seq_dict = dict()
-train_labels_dict = dict()
+# train_labels_dict = dict()
 test_seq_dict = dict()
-test_labels_dict = dict()
+# test_labels_dict = dict()
 
 letter_to_number = { 'P':1, 'U':2, 'C':3, 'A':4, 'G':5, 'S':6, 'N':7, 'B':8, 'D':9, 'E':10, 'Z':11, 'Q':12, 'R':13, 'K':14, 'H':15, 'F':16, 'Y':17, 'W':18, 'M':19, 'L':20, 'I':21, 'V':22, 'T':23, '.':24, 'X':25 }
 ss_to_number = {'H': 1, 'E':2, 'T': 3, 'S': 4, 'G': 5, 'I':6, 'C':7, '.':8, '-':9}
-
-
-def gather_master_sequences(file_name : str):
     
 
 def batch_data(batch_num : int, file_name : str):
@@ -89,7 +85,7 @@ def map_to_integer(data_file : str):
     sequence_labels = []
 
     sequence_type = 'SEQUENCE'
-    with open(data_file, 'r') as unprocessed_data:
+    with open(os.path.join(data_file), 'r') as unprocessed_data:
         for line in unprocessed_data:
             if line.startswith('>'):
                 sequence_type = 'SEQUENCE'
@@ -105,11 +101,35 @@ def map_to_integer(data_file : str):
                 compiled_seq = compile_tensor(line, sequence_type)
                 sequence_labels.append(compiled_seq)
     
-    return np.array(all_sequences), np.array(sequence_labels)
+    return all_sequences, sequence_labels
 
-# all_sequences, sequence_labels = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
-# print(all_sequences.shape)
 
-split_data()
+def gather_master_sequences(all_files : list[str], data_type = "train"):
+    master_seq_dict = dict()
 
-print(batch_data)
+    if len(all_files) == 0:
+        for file_name in os.listdir(os.path.join(f"{data_type}_data", "collected_master_sequences", file_name)):
+            file_id = file_name[0:7]
+
+            file_path = os.path.join(f"{data_type}_data", "collected_master_sequences", file_name)
+
+            master_seq, seq_labels = map_to_integer(file_path)
+            master_seq_dict[file_id] = (master_seq, seq_labels)
+    else:
+        for file_name in all_files:
+            file_id = file_name[0:7]
+
+            file_path = os.path.join(f"{data_type}_data", "collected_master_sequences", file_name)
+
+            master_seq, seq_labels = map_to_integer(file_path)
+            master_seq_dict[file_id] = (master_seq, seq_labels)
+
+    return master_seq_dict
+
+# print(gather_master_sequences(["PF00018.master.txt"]))
+
+
+
+    
+
+

@@ -3,8 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
 from pathlib import Path
-from preprocessing import map_to_integer
+from preprocessing import *
 import os
+import numpy as np
 
 """"
 model assumes input sequence is of length 31000 but we mgiht need to fix that...
@@ -129,18 +130,19 @@ class MSASlidingWindowDataset(torch.utils.data.Dataset):
    
 
 def main():
-    # Master Sequences: Dictionary of sets
-    # Key: Family ID, Value: Set
+    # Master Sequences: Dictionary of list (tuple of tensors)
+    # Key: Family ID, Value: list
     # Pull a random Master sequence from the current domain
-
+    train_master_seq_dict = gather_master_sequences()
+    test_master_seq_dict = gather_master_sequences(data_type="test")
 
     #load in data of size N x L;
     # N = number of sequences
     # L = length of each sequence
     # train_msa_tensor, train_labels_tensor = map_to_integer(Path.cwd() / "collected_data" / "data.txt")
     train_msa_tensor, train_labels_tensor = map_to_integer(os.path.join("collected_data", "PF00071.parsed.txt"))
-    train_msa_tensor = torch.from_numpy(train_msa_tensor.T).long()
-    train_labels_tensor = torch.from_numpy(train_labels_tensor.T)
+    train_msa_tensor = torch.from_numpy(np.array(train_msa_tensor).T).long()
+    train_labels_tensor = torch.from_numpy(np.array(train_labels_tensor).T)
 
     print(train_labels_tensor.shape)
 
