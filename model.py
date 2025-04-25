@@ -190,7 +190,7 @@ def main():
     # train_labels_tensor = torch.from_numpy(np.array(train_labels_tensor).T)
     
     # #create model
-    model = RSAProteinModel(num_sequences=train_msa_tensor.shape[1])
+    model = RSAProteinModel(num_sequences=15)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # move model to GPU if available
@@ -199,13 +199,15 @@ def main():
 
     # training loop for 5 epochs (up to 5 in paper)
     epochs = 5
+    train_acc = 0
     for j in range(epochs):
-        train_sequences, train_labels =  train_data_processing(train_body_seq_dict, train_master_seq_dict)
-        train_dataset = zip(train_sequences, train_labels)
+        train_sequences_tensor, train_labels_tensor =  train_data_processing(train_body_seq_dict, train_master_seq_dict)
+        #train_dataset = zip(train_sequences, train_labels)
+        train_dataset = MSASlidingWindowDataset(train_sequences_tensor, train_labels_tensor, window_size=31, max_depth=15)
         running_loss = 0
 
         model.train()
-
+        
         # Train for N-total batches of batch-size M (i.e. 15) for EACH family domain as well
         for item in tqdm(train_dataset, desc=f"Epoch {j+1} Training"):
             #inputs = inputs.to(device)
@@ -232,33 +234,16 @@ def main():
             # evaluation after epoch - accuracy computation
             running_loss += loss.item()
 
-            # Accuracy computation
-            test_acc += model.accuracy(y_pred, one_hot_actual)
-
         # print(len(train_dataset))
-        print(f"After epoch {j+1}: Accuracy ={test_acc / len(train_dataset):.4f}; Running Loss = {running_loss:.4f}")
+        train_acc += model.accuracy(y_pred, one_hot_actual)
+        print(f"After epoch {j+1}: Accuracy ={train_acc / len(train_dataset):.4f}; Running Loss = {running_loss:.4f}")
 
-        # model.eval()
-        # test_acc = 0
-        # with torch.no_grad():
-        #     for item in train_dataset:
-        #         # input, label = input.to(device), label.to(device)
-        #         input_tensor = item[0]  # corresponds to the input_tensor for the current sliding window
-        #         labels_tensor = item[1] # Corresponds to the labels for ALL of the current sequences
-        #         curr_index = item[2]    # Corresponds to current index of the master sequence we are predicting for
+        #test_acc = 0
+        # for batch_idx, (input, label) in enumerate(test_dataset):
+        #     input = torch.reshape(input, (len(input),-1))
+        #     test_acc += model.accuracy(model(input), label)
+        #print(f"Accuracy on testing set after epoch {j}: {test_acc/len(test_dataset)}; Running Loss = {running_loss:.4f}")
 
-        #         y_pred = model(input_tensor)   # Outputs (1,9) vector of softmax values
-
-        #         # Get label at current idx for master sequence
-        #         actual_label = int(labels_tensor[0].item())
-        #         # print("ACTUAL LABEL: ",actual_label)
-        #         one_hot_actual = torch.zeros((1, 9))
-        #         one_hot_actual[:, actual_label-1] = 1
-
-        #         test_acc += model.accuracy(y_pred, one_hot_actual)
-
-        # # print(len(train_dataset))
-        # print(f"Accuracy on testing set after epoch {j+1}: {test_acc / len(train_dataset):.4f}")
 
     print()
     print(model)

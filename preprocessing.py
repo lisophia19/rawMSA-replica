@@ -156,7 +156,7 @@ def gather_body_sequences():
     return train_seq_dict, test_seq_dict, min_number_body_seq
 
 #master_seq_dict = gather_master_sequences(["PF00018.master.txt"])
-t#rain_seq_dict, test_seq_dict, min_number_body_seq = gather_body_sequences()
+#train_seq_dict, test_seq_dict, min_number_body_seq = gather_body_sequences()
 # min_num_batches = min_number_body_seq // 15
 #print(master_seq_dict)
 
