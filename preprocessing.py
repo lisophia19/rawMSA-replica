@@ -1,9 +1,8 @@
 # import tensorflow as tf
 import torch
 import numpy as np
-from pathlib import Path
 import os
-from collections import defaultdict
+import random
 
 
 # train_seq_dict = dict()
@@ -86,6 +85,13 @@ def map_to_integer(data_file : str):
     
     return all_sequences, sequence_labels
 
+def shuffle_data(sequences, labels):
+    combined_list = list(zip(sequences, labels))
+    random.shuffle(combined_list) #shuffle seq and labels tgtr
+    sequences_shuffled, labels_shuffled = zip(*combined_list)
+
+    return list(sequences_shuffled), list(labels_shuffled)
+
 
 def gather_master_sequences(all_files : list[str], data_type = "train"):
     master_seq_dict = dict()
@@ -97,9 +103,9 @@ def gather_master_sequences(all_files : list[str], data_type = "train"):
             file_path = os.path.join(f"{data_type}_data", "collected_master_sequences", file_name)
 
             master_seq, seq_labels = map_to_integer(file_path)
+            master_seq, seq_labels = shuffle_data(master_seq, seq_labels)
 
             # print(len(master_seq))
-
             master_seq_dict[file_id] = (master_seq, seq_labels)
     else:
         for file_name in all_files:
@@ -108,8 +114,9 @@ def gather_master_sequences(all_files : list[str], data_type = "train"):
             file_path = os.path.join(f"{data_type}_data", "collected_master_sequences", file_name)
 
             master_seq, seq_labels = map_to_integer(file_path)
-            master_seq_dict[file_id] = (master_seq, seq_labels)
+            master_seq, seq_labels = shuffle_data(master_seq, seq_labels)
 
+            master_seq_dict[file_id] = (master_seq, seq_labels)
             # print(master_seq_dict[file_id])
 
 
@@ -124,12 +131,13 @@ def gather_body_sequences():
     for data_file in os.listdir(os.path.join("train_data","collected_body_sequences")):
         file_path = os.path.join("train_data","collected_body_sequences", data_file)
         sequence_data, _ = map_to_integer(file_path)
+        random.shuffle(sequence_data)
         sequence_data_tensor = torch.tensor(sequence_data)
 
         file_id = data_file[0:7]
         train_seq_dict[file_id] = sequence_data_tensor
 
-
+        #need min for training --> batching
         if min_number_body_seq == -1:
             min_number_body_seq = len(sequence_data)
         else:
@@ -139,6 +147,7 @@ def gather_body_sequences():
     # for data_file in os.listdir(os.path.join("test_data","collected_body_sequences")):
     #     file_path = os.path.join("test_data","collected_body_sequences", data_file)
     #     sequence_data, _ = map_to_integer(file_path)
+    #     random.shuffle(sequence_data)
     #     sequence_data = torch.tensor(sequence_data)
 
     #     file_id = data_file[0:7]
@@ -146,8 +155,8 @@ def gather_body_sequences():
 
     return train_seq_dict, test_seq_dict, min_number_body_seq
 
-gather_master_sequences(["PF00018.master.txt"])
-# train_seq_dict, test_seq_dict, min_number_body_seq = gather_body_sequences()
+#master_seq_dict = gather_master_sequences(["PF00018.master.txt"])
+t#rain_seq_dict, test_seq_dict, min_number_body_seq = gather_body_sequences()
 # min_num_batches = min_number_body_seq // 15
-# print(min_number_body_seq)
+#print(master_seq_dict)
 
