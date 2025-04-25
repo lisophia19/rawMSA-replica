@@ -199,14 +199,13 @@ def main():
 
     # training loop for 5 epochs (up to 5 in paper)
     epochs = 5
-    train_acc = 0
     for j in range(epochs):
         train_sequences_tensor, train_labels_tensor =  train_data_processing(train_body_seq_dict, train_master_seq_dict)
         #train_dataset = zip(train_sequences, train_labels)
         train_dataset = MSASlidingWindowDataset(train_sequences_tensor, train_labels_tensor, window_size=31, max_depth=15)
         running_loss = 0
-
-        model.train()
+        train_acc = 0
+        #model.train()
         
         # Train for N-total batches of batch-size M (i.e. 15) for EACH family domain as well
         for item in tqdm(train_dataset, desc=f"Epoch {j+1} Training"):
@@ -234,8 +233,9 @@ def main():
             # evaluation after epoch - accuracy computation
             running_loss += loss.item()
 
-        # print(len(train_dataset))
-        train_acc += model.accuracy(y_pred, one_hot_actual)
+            # print(len(train_dataset))
+            train_acc += model.accuracy(y_pred, one_hot_actual)
+
         print(f"After epoch {j+1}: Accuracy ={train_acc / len(train_dataset):.4f}; Running Loss = {running_loss:.4f}")
 
         #test_acc = 0
