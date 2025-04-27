@@ -179,12 +179,15 @@ def train_data_processing(train_body_seq_dict, train_master_seq_dict):
     return torch.tensor(training_inputs), torch.tensor(training_labels),
 
 
-def batch_step(optimizer, model, item, is_training = True):
+def batch_step(optimizer, model, item, device, is_training = True):
     optimizer.zero_grad()   # clear gradients beforehand
 
-    input_tensor = item[0]  # corresponds to the input_tensor for the current sliding window
-    labels_tensor = item[1] # Corresponds to the labels for ALL of the current sequences
+    #input_tensor = item[0]  # corresponds to the input_tensor for the current sliding window
+    #labels_tensor = item[1] # Corresponds to the labels for ALL of the current sequences
     #curr_index = item[2]    # Corresponds to current index of the master sequence we are predicting for
+
+    input_tensor = move_data_to_device(item[0], device)
+    labels_tensor = move_data_to_device(item[1], device)
 
     y_pred = model(input_tensor)   # Outputs (1,9) vector of softmax values
 
@@ -242,16 +245,10 @@ def main():
 
     # #create model
     model = RSAProteinModel(num_sequences=15)
-
     model = model.to(device)
-
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=1, verbose=True)
-
-    # move model to GPU if available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
 
     # training loop for 5 epochs (up to 5 in paper)
     epochs = 5
@@ -259,6 +256,8 @@ def main():
         # Train Data
         train_sequences_tensor, train_labels_tensor = train_data_processing(train_body_seq_dict, train_master_seq_dict)
         # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
+        train_sequences_tensor = train_sequences_tensor.to(device)
+        train_labels_tensor = train_labels_tensor.to(device)
 
         num_train_entries = train_sequences_tensor.shape[0]
 
@@ -268,6 +267,8 @@ def main():
 
         # Val Data
         val_sequences_tensor, val_labels_tensor =  train_data_processing(val_body_seq_dict, val_master_seq_dict)
+        val_sequences_tensor = val_sequences_tensor.to(device)
+        val_labels_tensor = val_labels_tensor.to(device)
         val_dataset = MSASlidingWindowDataset(val_sequences_tensor, val_labels_tensor, window_size=31, max_depth=15) # Shape of (4800, 15, 31 --> for 200 times), 
         val_loss = 0.
         val_acc = 0.
@@ -278,7 +279,7 @@ def main():
         for item in tqdm(train_dataset, desc=f"Epoch {j+1} Training"):
             # print(item[1].shape)
 
-            loss, acc = batch_step(optimizer, model, item)
+            loss, acc = batch_step(optimizer, model, item, device)
             curr_loss += loss
             train_acc += acc
         
@@ -286,7 +287,7 @@ def main():
         print(f"After epoch {j+1}: Accuracy ={train_acc / num_train_entries:.4f}; Running Loss = {curr_loss:.4f}")
 
         for item in tqdm(val_dataset):
-            loss, acc = batch_step(optimizer, model, item, is_training=False)
+            loss, acc = batch_step(optimizer, model, item, device, is_training=False)
             val_loss += loss
             val_acc += acc
 
@@ -295,6 +296,8 @@ def main():
 
     # Test data
     test_sequences_tensor, test_labels_tensor =  train_data_processing(test_body_seq_dict, test_master_seq_dict)
+    test_sequences_tensor = test_sequences_tensor.to(device)
+    test_labels_tensor = test_labels_tensor.to(device)
     test_dataset = MSASlidingWindowDataset(test_sequences_tensor, test_labels_tensor, window_size=31, max_depth=15)
     test_loss = 0.
     test_acc = 0.
@@ -303,7 +306,7 @@ def main():
 
 
     for item in tqdm(test_dataset):
-        loss, acc = batch_step(optimizer, model, item, is_training=False)
+        loss, acc = batch_step(optimizer, model, item, device, is_training=False)
         test_loss += loss
         test_acc += acc
 
