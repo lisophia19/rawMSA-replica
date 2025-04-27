@@ -206,19 +206,35 @@ def batch_step(optimizer, model, item, is_training = True):
     return (loss.item(), model.accuracy(y_pred, actual_label))
 
 
+def move_data_to_device(data, device):
+    if isinstance(data, torch.Tensor):
+        return data.to(device)
+    elif isinstance(data, list):
+        return [move_data_to_device(item, device) for item in data]
+    elif isinstance(data, dict):
+        return {key: move_data_to_device(value, device) for key, value in data.items()}
+    else:
+        return data
+
+
 def main():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     # Master Sequences: Dictionary of list (tuple of tensors)
     # Key: Family ID, Value: list
     # Pull a random Master sequence from the current domain
-    train_master_seq_dict = gather_master_sequences([])
-    test_master_seq_dict = gather_master_sequences([], data_type="test")
-    val_master_seq_dict = gather_master_sequences([], data_type='val')
+    train_master_seq_dict = move_data_to_device(gather_master_sequences([]), device)
+    test_master_seq_dict = move_data_to_device(gather_master_sequences([], data_type="test"), device)
+    val_master_seq_dict = move_data_to_device(gather_master_sequences([], data_type='val'), device)
 
     #build datasets using the custom sliding window class
     #train_dataset = MSASlidingWindowDataset(train_msa_tensor, train_labels_tensor, window_size=31, max_depth=15)
     #train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
 
     train_body_seq_dict, test_body_seq_dict, val_body_seq_dict = gather_body_sequences()
+    train_body_seq_dict = move_data_to_device(train_body_seq_dict, device)
+    test_body_seq_dict = move_data_to_device(test_body_seq_dict, device)
+    val_body_seq_dict = move_data_to_device(val_body_seq_dict, device)
 
     #load in data of size N x L;
     # N = number of sequences
@@ -226,6 +242,10 @@ def main():
 
     # #create model
     model = RSAProteinModel(num_sequences=15)
+
+    model = model.to(device)
+
+
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=1, verbose=True)
 
@@ -263,14 +283,14 @@ def main():
             train_acc += acc
         
         # print(len(train_dataset))
-        print(f"After epoch {j+1}: Accuracy ={train_acc / len(num_train_entries):.4f}; Running Loss = {curr_loss:.4f}")
+        print(f"After epoch {j+1}: Accuracy ={train_acc / num_train_entries:.4f}; Running Loss = {curr_loss:.4f}")
 
         for item in tqdm(val_dataset):
             loss, acc = batch_step(optimizer, model, item, is_training=False)
             val_loss += loss
             val_acc += acc
 
-        print(f"Validation Accuracy after epoch {j+1}: Accuracy = {val_acc / len(num_val_entries):.4f}; Running Loss = {val_loss:.4f}")
+        print(f"Validation Accuracy after epoch {j+1}: Accuracy = {val_acc / num_val_entries:.4f}; Running Loss = {val_loss:.4f}")
         print()
 
     # Test data
@@ -287,6 +307,6 @@ def main():
         test_loss += loss
         test_acc += acc
 
-    print(f"Test Accuracy after epoch {j+1}: Accuracy = {test_acc / len(num_test_entries):.4f}; Running Loss = {test_loss:.4f}")
+    print(f"Test Accuracy after epoch {j+1}: Accuracy = {test_acc / num_test_entries:.4f}; Running Loss = {test_loss:.4f}")
 
 main()
