@@ -142,6 +142,8 @@ def train_data_processing(train_body_seq_dict, train_master_seq_dict):
     random.shuffle(shuffled_family_ids)
 
     for family_id in shuffled_family_ids:
+        #shuffle sequence data
+        random.shuffle(train_body_seq_dict[family_id])
         total_seq_len = len(train_body_seq_dict[family_id])
         num_batches = total_seq_len // 14
 
@@ -225,6 +227,7 @@ def main():
     # #create model
     model = RSAProteinModel(num_sequences=15)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=1, verbose=True)
 
     # move model to GPU if available
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

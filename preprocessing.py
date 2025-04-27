@@ -134,6 +134,7 @@ def gather_body_sequences():
         sequence_data_tensor = torch.tensor(sequence_data)
 
         file_id = data_file[0:7]
+        #print(f"{file_id} is {len(sequence_data[0])} length")
         train_seq_dict[file_id] = sequence_data_tensor
 
     #testing data collection
@@ -159,7 +160,7 @@ def gather_body_sequences():
     return train_seq_dict, test_seq_dict, val_seq_dict
 
 #master_seq_dict = gather_master_sequences(["PF00018.master.txt"])
-#train_seq_dict, test_seq_dict, min_number_body_seq = gather_body_sequences()
+#gather_body_sequences()
 # min_num_batches = min_number_body_seq // 15
 #print(master_seq_dict)
 
