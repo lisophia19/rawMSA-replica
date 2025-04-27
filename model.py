@@ -112,13 +112,13 @@ class MSASlidingWindowDataset(torch.utils.data.Dataset):
         self.labels = labels
 
         pad_len = window_size // 2
-        L, Y = msa_tensor.shape
+        B, L, Y = msa_tensor.shape
         Y = min(Y, max_depth)
 
-        msa_trimmed = msa_tensor[:, :Y]
+        msa_trimmed = msa_tensor[:, :, :Y]
 
-        msa_padded = torch.full((L + 2 * pad_len, max_depth), pad_token, dtype=torch.long)
-        msa_padded[pad_len:pad_len+L, :Y] = torch.tensor(msa_trimmed, dtype=torch.long)
+        msa_padded = torch.full((B, L + 2 * pad_len, max_depth), pad_token, dtype=torch.long)
+        msa_padded[:, pad_len:pad_len+L, :Y] = torch.tensor(msa_trimmed, dtype=torch.long)
 
         self.msa_padded = msa_padded
         self.length = L
@@ -128,9 +128,9 @@ class MSASlidingWindowDataset(torch.utils.data.Dataset):
         return self.length
 
     def __getitem__(self, idx):
-        window = self.msa_padded[idx:idx+self.window_size, :]  # (31, Y)
-        window_flat = window.flatten()  # (31*Y,)
-        label = self.labels[idx]  # Need these to be of shape (31*Y) as well
+        window = self.msa_padded[:, idx:idx+self.window_size, :]  # (31, Y)
+        window_flat = torch.flatten(window, start_dim=1, end_dim=2)  # (31*Y,)
+        label = self.labels[:, idx]  # Need these to be of shape (31*Y) as well
 
         return window_flat, label, idx
    
@@ -158,13 +158,21 @@ def train_data_processing(train_body_seq_dict, train_master_seq_dict):
 
             batch_data = batch_train_data(train_body_seq_dict, batch_num, family_id)
 
-            training_inputs.append(master_seq) #master seq is first in list
-            training_inputs += batch_data
-            training_labels.append(master_seq_label) #training labels only has one label aka master
+            # curr_batch = [master_seq] + batch_data
+            master_seq = torch.tensor([master_seq])
+            curr_batch = torch.concat((master_seq, batch_data))
+
+            training_inputs.append(curr_batch) #master seq is first in list
+            # training_inputs += batch_data
+            training_labels.append([master_seq_label]) #training labels only has one label aka master
             # print(type(master_seq))
 
-    training_inputs = np.array(training_inputs).T
-    training_labels = np.array(training_labels).T
+    # print(np.array(training_inputs).shape)
+
+    # print(np.array(training_labels).shape)
+
+    training_inputs = torch.tensor(np.array(training_inputs)).permute(0, 2, 1)
+    training_labels = torch.tensor(np.array(training_labels)).permute(0, 2, 1)
 
     return torch.tensor(training_inputs), torch.tensor(training_labels),
 
@@ -179,9 +187,11 @@ def batch_step(optimizer, model, item, is_training = True):
     y_pred = model(input_tensor)   # Outputs (1,9) vector of softmax values
 
     # Get label at current idx for master sequence
-    actual_label = labels_tensor[0].long() - 1  # make sure it's a LongTensor
-    actual_label = actual_label.unsqueeze(0)           # match (batch_size=1,) if necessary
+    actual_label = labels_tensor.long() - 1  # make sure it's a LongTensor
+    actual_label = actual_label.squeeze()           # match (batch_size=1,) if necessary
 
+    # print("PREDICTIONS SHAPE: ", y_pred.shape)
+    # print("LABELS SHAPE: ", actual_label.shape)
 
     loss = model.loss(y_pred, actual_label)
 
@@ -224,19 +234,24 @@ def main():
     epochs = 5
     for j in range(epochs):
         # Train Data
-        train_sequences_tensor, train_labels_tensor =  train_data_processing(train_body_seq_dict, train_master_seq_dict)
+        train_sequences_tensor, train_labels_tensor = train_data_processing(train_body_seq_dict, train_master_seq_dict)
+        # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
+
+
         train_dataset = MSASlidingWindowDataset(train_sequences_tensor, train_labels_tensor, window_size=31, max_depth=15)
         running_loss = 0.
         train_acc = 0.
 
         # Val Data
         val_sequences_tensor, val_labels_tensor =  train_data_processing(val_body_seq_dict, val_master_seq_dict)
-        val_dataset = MSASlidingWindowDataset(val_sequences_tensor, val_labels_tensor, window_size=31, max_depth=15)
+        val_dataset = MSASlidingWindowDataset(val_sequences_tensor, val_labels_tensor, window_size=31, max_depth=15) # Shape of (4800, 15, 31 --> for 200 times), 
         val_loss = 0.
         val_acc = 0.
         
         # Train for N-total batches of batch-size M (i.e. 15) for EACH family domain as well
         for item in tqdm(train_dataset, desc=f"Epoch {j+1} Training"):
+            # print(item[1].shape)
+
             loss, acc = batch_step(optimizer, model, item)
             running_loss += loss
             train_acc += acc
