@@ -27,6 +27,14 @@ def parse_stockholm_with_ss(file_path):
 
                     master_sequences[seq_id] += actual_sequence
                     sec_structs[seq_id] += ss_sequence
+                elif len(sequence) == 2: #sequence[2] != 'SS':
+                    seq_id = sequence[0]
+                    actual_sequence = sequence[1]
+                
+                    body_sequences[seq_id] += actual_sequence
+                    # print(sequence)
+
+
             elif previous_line != "" and not previous_line.startswith('#'):
                 sequence=previous_line.split()
 
@@ -72,3 +80,5 @@ def parse_all_files(parent_dir, stockholm_dir, collected_master_dir, collected_b
 parse_all_files('train_data', 'stockholm_train_data', 'collected_master_sequences', 'collected_body_sequences')
 parse_all_files('val_data', 'stockholm_val_data', 'collected_master_sequences', 'collected_body_sequences')
 parse_all_files('test_data', 'stockholm_test_data', 'collected_master_sequences', 'collected_body_sequences')
+
+# parse_stockholm_with_ss(os.path.join('train_data', 'stockholm_train_data', 'PF00069.alignment.seed'))
