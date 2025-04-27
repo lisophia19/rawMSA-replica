@@ -163,9 +163,9 @@ def train_data_processing(train_body_seq_dict, train_master_seq_dict, device):
             # curr_batch = [master_seq] + batch_data
             # master_seq = torch.tensor([master_seq], device=device)
             master_seq = master_seq.to(device)
-	    curr_batch = torch.concat((master_seq.unsqueeze(0), batch_data))
+            curr_batch = torch.concat((master_seq.unsqueeze(0), batch_data))
 
-	    master_seq_label = master_seq_label.to(device)
+            master_seq_label = master_seq_label.to(device)
             training_inputs.append(curr_batch) #master seq is first in list
             training_labels.append(master_seq_label.unsqueeze(0)) #training labels only has one label aka master
 
