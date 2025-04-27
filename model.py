@@ -230,8 +230,8 @@ def main():
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=1, verbose=True)
 
     # move model to GPU if available
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # model.to(device)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
 
     # training loop for 5 epochs (up to 5 in paper)
     epochs = 5
@@ -242,7 +242,7 @@ def main():
 
 
         train_dataset = MSASlidingWindowDataset(train_sequences_tensor, train_labels_tensor, window_size=31, max_depth=15)
-        running_loss = 0.
+        curr_loss = 0.
         train_acc = 0.
 
         # Val Data
@@ -256,10 +256,11 @@ def main():
             # print(item[1].shape)
 
             loss, acc = batch_step(optimizer, model, item)
-            running_loss += loss
+            curr_loss += loss
             train_acc += acc
-
-        print(f"After epoch {j+1}: Accuracy ={train_acc / len(train_dataset):.4f}; Running Loss = {running_loss:.4f}")
+        
+        print(len(train_dataset))
+        print(f"After epoch {j+1}: Accuracy ={train_acc / len(train_dataset):.4f}; Running Loss = {curr_loss:.4f}")
 
         for item in tqdm(val_dataset):
             loss, acc = batch_step(optimizer, model, item, is_training=False)
