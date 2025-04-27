@@ -134,7 +134,7 @@ class MSASlidingWindowDataset(torch.utils.data.Dataset):
 
         return window_flat, label, idx
    
-def train_data_processing(train_body_seq_dict, train_master_seq_dict):
+def train_data_processing(train_body_seq_dict, train_master_seq_dict, device):
     training_inputs = []
     training_labels = []
 
@@ -161,17 +161,12 @@ def train_data_processing(train_body_seq_dict, train_master_seq_dict):
             batch_data = batch_train_data(train_body_seq_dict, batch_num, family_id)
 
             # curr_batch = [master_seq] + batch_data
-            master_seq = torch.tensor([master_seq])
-            curr_batch = torch.concat((master_seq, batch_data))
+            master_seq = torch.tensor([master_seq], device=device)
+            curr_batch = torch.concat((master_seq, batch_data), device=device)
 
             training_inputs.append(curr_batch) #master seq is first in list
-            # training_inputs += batch_data
             training_labels.append([master_seq_label]) #training labels only has one label aka master
-            # print(type(master_seq))
 
-    # print(np.array(training_inputs).shape)
-
-    # print(np.array(training_labels).shape)
 
     training_inputs = torch.tensor(np.array(training_inputs)).permute(0, 2, 1)
     training_labels = torch.tensor(np.array(training_labels)).permute(0, 2, 1)
@@ -255,7 +250,7 @@ def main():
     epochs = 5
     for j in range(epochs):
         # Train Data
-        train_sequences_tensor, train_labels_tensor = train_data_processing(train_body_seq_dict, train_master_seq_dict)
+        train_sequences_tensor, train_labels_tensor = train_data_processing(train_body_seq_dict, train_master_seq_dict, device=device)
         # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
         train_sequences_tensor = train_sequences_tensor.to(device)
         train_labels_tensor = train_labels_tensor.to(device)
@@ -267,7 +262,7 @@ def main():
         train_acc = 0.
 
         # Val Data
-        val_sequences_tensor, val_labels_tensor =  train_data_processing(val_body_seq_dict, val_master_seq_dict)
+        val_sequences_tensor, val_labels_tensor =  train_data_processing(val_body_seq_dict, val_master_seq_dict, device=device)
         val_sequences_tensor = val_sequences_tensor.to(device)
         val_labels_tensor = val_labels_tensor.to(device)
         val_dataset = MSASlidingWindowDataset(val_sequences_tensor, val_labels_tensor, window_size=31, max_depth=15) # Shape of (4800, 15, 31 --> for 200 times), 
@@ -296,7 +291,7 @@ def main():
         print()
 
     # Test data
-    test_sequences_tensor, test_labels_tensor =  train_data_processing(test_body_seq_dict, test_master_seq_dict)
+    test_sequences_tensor, test_labels_tensor =  train_data_processing(test_body_seq_dict, test_master_seq_dict, device=device)
     test_sequences_tensor = test_sequences_tensor.to(device)
     test_labels_tensor = test_labels_tensor.to(device)
     test_dataset = MSASlidingWindowDataset(test_sequences_tensor, test_labels_tensor, window_size=31, max_depth=15)
