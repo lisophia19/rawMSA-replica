@@ -70,3 +70,5 @@ def parse_all_files(parent_dir, stockholm_dir, collected_master_dir, collected_b
 
 
 parse_all_files('train_data', 'stockholm_train_data', 'collected_master_sequences', 'collected_body_sequences')
+parse_all_files('val_data', 'stockholm_val_data', 'collected_master_sequences', 'collected_body_sequences')
+parse_all_files('test_data', 'stockholm_test_data', 'collected_master_sequences', 'collected_body_sequences')

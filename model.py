@@ -29,7 +29,7 @@ class RSAProteinModel(nn.Module):
         # Represents number of items for each vector
         self.embedding_dim = 14
         # For the LSTM BRNNs
-        self.lstm_hidden = 400
+        self.lstm_hidden = 350
 
         self.dropout_rate=0.4
 
@@ -51,9 +51,10 @@ class RSAProteinModel(nn.Module):
 
         self.dropout = nn.Dropout(self.dropout_rate)
 
-        self.fc1 = nn.Linear(self.sequence_length * self.lstm_hidden, 150)
-        self.fc2 = nn.Linear(150, 50)
-        self.fc3 = nn.Linear(50, 9) #9 secondary structures from preprocessing
+        self.fc1 = nn.Linear(self.sequence_length * self.lstm_hidden, 200)
+        # self.dl1 = nn.Linear()
+        self.fc2 = nn.Linear(200, 50)
+        self.fc3 = nn.Linear(50, 4) #9 secondary structures from preprocessing
 
     def forward(self, x):
         # x: (batch_size, 31*max_depth=31*15=465)  -- max depth = number of sequences
@@ -167,6 +168,7 @@ def train_data_processing(train_body_seq_dict, train_master_seq_dict):
 
     print(training_inputs.shape)
     print(training_labels.shape)
+
     return torch.tensor(training_inputs), torch.tensor(training_labels),
 
 def main():
@@ -174,21 +176,22 @@ def main():
     # Key: Family ID, Value: list
     # Pull a random Master sequence from the current domain
     train_master_seq_dict = gather_master_sequences([])
-    # test_master_seq_dict = gather_master_sequences([], data_type="test")
+    test_master_seq_dict = gather_master_sequences([], data_type="test")
+    val_master_seq_dict = gather_master_sequences([], data_type='val')
 
     #build datasets using the custom sliding window class
     #train_dataset = MSASlidingWindowDataset(train_msa_tensor, train_labels_tensor, window_size=31, max_depth=15)
     #train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
 
-    train_body_seq_dict, test_body_seq_dict, min_number_body_seq = gather_body_sequences()
+    train_body_seq_dict, test_body_seq_dict, val_body_seq_dict = gather_body_sequences()
 
     #load in data of size N x L;
     # N = number of sequences
     # L = length of each sequence
-    
-    # train_msa_tensor = torch.from_numpy(np.array(train_msa_tensor).T).long()
-    # train_labels_tensor = torch.from_numpy(np.array(train_labels_tensor).T)
-    
+
+    # print(len(val_master_seq_dict))
+    # print(len(val_body_seq_dict))
+
     # #create model
     model = RSAProteinModel(num_sequences=15)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
@@ -198,8 +201,13 @@ def main():
     # model.to(device)
 
     # training loop for 5 epochs (up to 5 in paper)
-    epochs = 5
+    epochs = 10
     for j in range(epochs):
+        # train_master_seq_dict = gather_master_sequences([])
+        # train_body_seq_dict, test_body_seq_dict, min_number_body_seq = gather_body_sequences()
+
+
+
         train_sequences_tensor, train_labels_tensor =  train_data_processing(train_body_seq_dict, train_master_seq_dict)
         #train_dataset = zip(train_sequences, train_labels)
         train_dataset = MSASlidingWindowDataset(train_sequences_tensor, train_labels_tensor, window_size=31, max_depth=15)
@@ -224,8 +232,6 @@ def main():
             actual_label = labels_tensor[0].long() - 1  # make sure it's a LongTensor
             actual_label = actual_label.unsqueeze(0)           # match (batch_size=1,) if necessary
 
-            # one_hot_actual = F.one_hot(actual_label - 1, num_classes=9).float().unsqueeze(0)
-
 
             loss = model.loss(y_pred, actual_label)
             loss.backward()
@@ -244,9 +250,35 @@ def main():
         #     test_acc += model.accuracy(model(input), label)
         #print(f"Accuracy on testing set after epoch {j}: {test_acc/len(test_dataset)}; Running Loss = {running_loss:.4f}")
 
+    val_sequences_tensor, val_labels_tensor =  train_data_processing(val_body_seq_dict, val_master_seq_dict)
+    
+    print(val_sequences_tensor.shape)
+    print(val_labels_tensor.shape)
+    
+    #train_dataset = zip(train_sequences, train_labels)
+    val_dataset = MSASlidingWindowDataset(val_sequences_tensor, val_labels_tensor, window_size=31, max_depth=15)
+    val_loss = 0.
+    val_acc = 0.
+    for item in tqdm(val_dataset):
 
-    print()
-    print(model)
+        input_tensor = item[0]  # corresponds to the input_tensor for the current sliding window
+        labels_tensor = item[1] # Corresponds to the labels for ALL of the current sequences
+        #curr_index = item[2]    # Corresponds to current index of the master sequence we are predicting for
 
+        y_pred = model(input_tensor)   # Outputs (1,9) vector of softmax values
+
+        # Get label at current idx for master sequence
+        actual_label = labels_tensor[0].long() - 1  # make sure it's a LongTensor
+        actual_label = actual_label.unsqueeze(0)           # match (batch_size=1,) if necessary
+
+
+        loss = model.loss(y_pred, actual_label)
+
+        val_loss += loss.item()
+        val_acc += model.accuracy(y_pred, actual_label)
+
+        # print(val_acc)
+
+    print(f"Validation Accuracy ={val_acc / len(val_dataset):.4f}; Running Loss = {val_loss:.4f}")
 
 main()

@@ -11,8 +11,8 @@ import random
 # test_labels_dict = dict()
 
 letter_to_number = { 'P':1, 'U':2, 'C':3, 'A':4, 'G':5, 'S':6, 'N':7, 'B':8, 'D':9, 'E':10, 'Z':11, 'Q':12, 'R':13, 'K':14, 'H':15, 'F':16, 'Y':17, 'W':18, 'M':19, 'L':20, 'I':21, 'V':22, 'T':23, '.':24, 'X':25 }
-ss_to_number = {'H': 1, 'E':2, 'T': 3, 'S': 4, 'G': 5, 'I':6, 'C':7, '.':8, '-':9}
-    
+# ss_to_number = {'H': 1, 'E':2, 'T': 3, 'S': 4, 'G': 5, 'I':6, 'C':7, '.':8, '-':9}
+ss_to_number = {'H': 1, 'S':2, 'C': 3, '-': 4}
 
 def batch_train_data(train_seq_dict, batch_num : int, file_id : str):
     batch_size = 14
@@ -48,12 +48,12 @@ def compile_tensor(line, sequence_type):
 
     while count < limit:
         if count >= line_len:
-            current_seq[count] = 25 if sequence_type == 'SEQUENCE' else 9
+            current_seq[count] = 25 if sequence_type == 'SEQUENCE' else 4
         else:
             try:
                 number = letter_to_number[line[count]] if sequence_type == 'SEQUENCE' else ss_to_number[line[count]]
             except KeyError:
-                number = 25 if sequence_type == 'SEQUENCE' else 9
+                number = 25 if sequence_type == 'SEQUENCE' else 4
 
             current_seq[count] = number
         count += 1
@@ -123,10 +123,9 @@ def gather_master_sequences(all_files : list[str], data_type = "train"):
     return master_seq_dict
 
 def gather_body_sequences():
-    min_number_body_seq = -1
-
     train_seq_dict = dict()
     test_seq_dict = dict()
+    val_seq_dict = dict()
     #training data collection
     for data_file in os.listdir(os.path.join("train_data","collected_body_sequences")):
         file_path = os.path.join("train_data","collected_body_sequences", data_file)
@@ -137,23 +136,27 @@ def gather_body_sequences():
         file_id = data_file[0:7]
         train_seq_dict[file_id] = sequence_data_tensor
 
-        #need min for training --> batching
-        if min_number_body_seq == -1:
-            min_number_body_seq = len(sequence_data)
-        else:
-            min_number_body_seq = min(min_number_body_seq, len(sequence_data))
-
     #testing data collection
-    # for data_file in os.listdir(os.path.join("test_data","collected_body_sequences")):
-    #     file_path = os.path.join("test_data","collected_body_sequences", data_file)
-    #     sequence_data, _ = map_to_integer(file_path)
-    #     random.shuffle(sequence_data)
-    #     sequence_data = torch.tensor(sequence_data)
+    for data_file in os.listdir(os.path.join("test_data","collected_body_sequences")):
+        file_path = os.path.join("test_data","collected_body_sequences", data_file)
+        sequence_data, _ = map_to_integer(file_path)
+        random.shuffle(sequence_data)
+        sequence_data = torch.tensor(sequence_data)
 
-    #     file_id = data_file[0:7]
-    #     test_seq_dict[file_id] = sequence_data
+        file_id = data_file[0:7]
+        test_seq_dict[file_id] = sequence_data
 
-    return train_seq_dict, test_seq_dict, min_number_body_seq
+    # val data collection
+    for data_file in os.listdir(os.path.join("val_data","collected_body_sequences")):
+        file_path = os.path.join("val_data","collected_body_sequences", data_file)
+        sequence_data, _ = map_to_integer(file_path)
+        random.shuffle(sequence_data)
+        sequence_data = torch.tensor(sequence_data)
+
+        file_id = data_file[0:7]
+        val_seq_dict[file_id] = sequence_data
+
+    return train_seq_dict, test_seq_dict, val_seq_dict
 
 #master_seq_dict = gather_master_sequences(["PF00018.master.txt"])
 #train_seq_dict, test_seq_dict, min_number_body_seq = gather_body_sequences()
