@@ -29,7 +29,7 @@ class RSAProteinModel(nn.Module):
         # Represents number of items for each vector
         self.embedding_dim = 14
         # For the LSTM BRNNs
-        self.lstm_hidden = 350
+        self.lstm_hidden = 400
 
         self.dropout_rate=0.4
 
@@ -51,9 +51,9 @@ class RSAProteinModel(nn.Module):
 
         self.dropout = nn.Dropout(self.dropout_rate)
 
-        self.fc1 = nn.Linear(self.sequence_length * self.lstm_hidden, 50)
-        self.fc2 = nn.Linear(50, 20)
-        self.fc3 = nn.Linear(20, 9) #9 secondary structures from preprocessing
+        self.fc1 = nn.Linear(self.sequence_length * self.lstm_hidden, 150)
+        self.fc2 = nn.Linear(150, 50)
+        self.fc3 = nn.Linear(50, 9) #9 secondary structures from preprocessing
 
     def forward(self, x):
         # x: (batch_size, 31*max_depth=31*15=465)  -- max depth = number of sequences
@@ -79,20 +79,24 @@ class RSAProteinModel(nn.Module):
         x = self.dropout(F.linear(x, self.fc2.weight, self.fc2.bias))
         x = self.fc3(x)
 
-        # Removed the log_softmax
         return F.log_softmax(x, dim=-1)
 
+    # labels are NOT one-hot, but indices
     def loss(self, predictions, labels):
         # predictions: (batch_size, num_classes)
         # labels: (batch_size, num_classes)
-        return F.nll_loss(predictions, torch.argmax(labels, dim=1))
+        # return F.cross_entropy(predictions, labels)
+        return F.nll_loss(predictions, labels)
 
     def accuracy(self, predictions, labels):
-        pred_classes = torch.argmax(predictions, 1)
-        true_classes = torch.argmax(labels, 1)
-        correct_prediction = torch.eq(pred_classes, true_classes)
-        return torch.mean(torch.Tensor(correct_prediction).to(torch.float32))
-        
+        pred_classes = torch.argmax(predictions, dim=1)
+        # true_classes = torch.argmax(labels, 1)
+        # correct_prediction = torch.eq(pred_classes, true_classes)
+        correct_prediction = (pred_classes == labels)
+        # return torch.mean(torch.Tensor(correct_prediction).to(torch.float32))
+        return torch.mean(correct_prediction.float())
+
+
 class MSASlidingWindowDataset(torch.utils.data.Dataset):
     def __init__(self, msa_tensor, labels, window_size=31, max_depth=25, pad_token=0):
         """
@@ -132,7 +136,11 @@ class MSASlidingWindowDataset(torch.utils.data.Dataset):
 def train_data_processing(train_body_seq_dict, train_master_seq_dict):
     training_inputs = []
     training_labels = []
-    for family_id in train_body_seq_dict.keys():
+
+    shuffled_family_ids = list(train_body_seq_dict.keys())
+    random.shuffle(shuffled_family_ids)
+
+    for family_id in shuffled_family_ids:
         total_seq_len = len(train_body_seq_dict[family_id])
         num_batches = total_seq_len // 14
 
@@ -147,15 +155,7 @@ def train_data_processing(train_body_seq_dict, train_master_seq_dict):
             master_seq = curr_master_seqs[0][random_index]
             master_seq_label = curr_master_seqs[1][random_index]
 
-            # print(master_seq)
-            # inputs_temp.append(master_seq)
-            # inputs_temp.append(batch_train_data(train_body_seq_dict, batch_num, family_id))
-
-            # labels_temp.append(master_seq_label)
-            # training_inputs.append(inputs_temp)
-
             batch_data = batch_train_data(train_body_seq_dict, batch_num, family_id)
-            # print(batch_data)
 
             training_inputs.append(master_seq) #master seq is first in list
             training_inputs += batch_data
@@ -205,7 +205,7 @@ def main():
         train_dataset = MSASlidingWindowDataset(train_sequences_tensor, train_labels_tensor, window_size=31, max_depth=15)
         running_loss = 0
         train_acc = 0
-        #model.train()
+        # model.train()
         
         # Train for N-total batches of batch-size M (i.e. 15) for EACH family domain as well
         for item in tqdm(train_dataset, desc=f"Epoch {j+1} Training"):
@@ -221,20 +221,20 @@ def main():
             y_pred = model(input_tensor)   # Outputs (1,9) vector of softmax values
 
             # Get label at current idx for master sequence
-            actual_label = int(labels_tensor[0].item())
-            # print("ACTUAL LABEL: ",actual_label)
-            one_hot_actual = torch.zeros((1, 9))
-            one_hot_actual[:, actual_label-1] = 1
+            actual_label = labels_tensor[0].long() - 1  # make sure it's a LongTensor
+            actual_label = actual_label.unsqueeze(0)           # match (batch_size=1,) if necessary
 
-            loss = model.loss(y_pred, one_hot_actual)
+            # one_hot_actual = F.one_hot(actual_label - 1, num_classes=9).float().unsqueeze(0)
+
+
+            loss = model.loss(y_pred, actual_label)
             loss.backward()
             optimizer.step()
 
             # evaluation after epoch - accuracy computation
             running_loss += loss.item()
 
-            # print(len(train_dataset))
-            train_acc += model.accuracy(y_pred, one_hot_actual)
+            train_acc += model.accuracy(y_pred, actual_label)
 
         print(f"After epoch {j+1}: Accuracy ={train_acc / len(train_dataset):.4f}; Running Loss = {running_loss:.4f}")
 
