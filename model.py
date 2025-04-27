@@ -210,6 +210,8 @@ def main():
     # Master Sequences: Dictionary of list (tuple of tensors)
     # Key: Family ID, Value: list
     # Pull a random Master sequence from the current domain
+
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_master_seq_dict = gather_master_sequences([])
     test_master_seq_dict = gather_master_sequences([], data_type="test")
     val_master_seq_dict = gather_master_sequences([], data_type='val')
@@ -230,8 +232,8 @@ def main():
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=1, verbose=True)
 
     # move model to GPU if available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # model.to(device)
 
     # training loop for 5 epochs (up to 5 in paper)
     epochs = 5
