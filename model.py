@@ -240,6 +240,7 @@ def main():
         train_sequences_tensor, train_labels_tensor = train_data_processing(train_body_seq_dict, train_master_seq_dict)
         # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
 
+        num_train_entries = train_sequences_tensor.shape[0]
 
         train_dataset = MSASlidingWindowDataset(train_sequences_tensor, train_labels_tensor, window_size=31, max_depth=15)
         curr_loss = 0.
@@ -250,6 +251,8 @@ def main():
         val_dataset = MSASlidingWindowDataset(val_sequences_tensor, val_labels_tensor, window_size=31, max_depth=15) # Shape of (4800, 15, 31 --> for 200 times), 
         val_loss = 0.
         val_acc = 0.
+
+        num_val_entries = val_sequences_tensor.shape[0]
         
         # Train for N-total batches of batch-size M (i.e. 15) for EACH family domain as well
         for item in tqdm(train_dataset, desc=f"Epoch {j+1} Training"):
@@ -259,15 +262,15 @@ def main():
             curr_loss += loss
             train_acc += acc
         
-        print(len(train_dataset))
-        print(f"After epoch {j+1}: Accuracy ={train_acc / len(train_dataset):.4f}; Running Loss = {curr_loss:.4f}")
+        # print(len(train_dataset))
+        print(f"After epoch {j+1}: Accuracy ={train_acc / len(num_train_entries):.4f}; Running Loss = {curr_loss:.4f}")
 
         for item in tqdm(val_dataset):
             loss, acc = batch_step(optimizer, model, item, is_training=False)
             val_loss += loss
             val_acc += acc
 
-        print(f"Validation Accuracy after epoch {j+1}: Accuracy = {val_acc / len(val_dataset):.4f}; Running Loss = {val_loss:.4f}")
+        print(f"Validation Accuracy after epoch {j+1}: Accuracy = {val_acc / len(num_val_entries):.4f}; Running Loss = {val_loss:.4f}")
         print()
 
     # Test data
@@ -276,11 +279,14 @@ def main():
     test_loss = 0.
     test_acc = 0.
 
+    num_test_entries = test_sequences_tensor.shape[0]
+
+
     for item in tqdm(test_dataset):
         loss, acc = batch_step(optimizer, model, item, is_training=False)
         test_loss += loss
         test_acc += acc
 
-    print(f"Test Accuracy after epoch {j+1}: Accuracy = {test_acc / len(test_dataset):.4f}; Running Loss = {test_loss:.4f}")
+    print(f"Test Accuracy after epoch {j+1}: Accuracy = {test_acc / len(num_test_entries):.4f}; Running Loss = {test_loss:.4f}")
 
 main()
