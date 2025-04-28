@@ -161,17 +161,16 @@ def train_data_processing(train_body_seq_dict, train_master_seq_dict, device):
             batch_data = batch_train_data(train_body_seq_dict, batch_num, family_id)
 
             # curr_batch = [master_seq] + batch_data
-            # master_seq = torch.tensor([master_seq], device=device)
-            master_seq = master_seq.to(device)
+            master_seq = torch.tensor(master_seq, device=device)
             curr_batch = torch.concat((master_seq.unsqueeze(0), batch_data))
 
-            master_seq_label = master_seq_label.to(device)
+            master_seq_label = torch.tensor(master_seq_label, device=device)
+
             training_inputs.append(curr_batch) #master seq is first in list
             training_labels.append(master_seq_label.unsqueeze(0)) #training labels only has one label aka master
 
-
-    training_inputs = torch.tensor(training_inputs).permute(0, 2, 1)
-    training_labels = torch.tensor(training_labels).permute(0, 2, 1)
+    training_inputs = torch.stack(training_inputs).permute(0, 2, 1)
+    training_labels = torch.stack(training_labels).permute(0, 2, 1)
 
     return torch.tensor(training_inputs), torch.tensor(training_labels),
 
