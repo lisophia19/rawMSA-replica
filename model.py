@@ -244,19 +244,20 @@ def main():
     model = RSAProteinModel(num_sequences=15)
     model = model.to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=1, verbose=True)
 
     # training loop for 5 epochs (up to 5 in paper)
-    epochs = 5
+    epochs = 15
     for j in range(epochs):
         # Train Data
         train_sequences_tensor, train_labels_tensor = train_data_processing(train_body_seq_dict, train_master_seq_dict, device=device)
         # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
         train_sequences_tensor = train_sequences_tensor.to(device)
         train_labels_tensor = train_labels_tensor.to(device)
-
-        num_train_entries = train_sequences_tensor.shape[0]
+	
+       	num_train_entries = train_sequences_tensor.shape[0]
+	print(num_train_entries)
 
         train_dataset = MSASlidingWindowDataset(train_sequences_tensor, train_labels_tensor, window_size=31, max_depth=15)
         curr_loss = 0.
@@ -300,7 +301,6 @@ def main():
     test_acc = 0.
 
     num_test_entries = test_sequences_tensor.shape[0]
-
 
     for item in tqdm(test_dataset):
         loss, acc = batch_step(optimizer, model, item, device, is_training=False)
