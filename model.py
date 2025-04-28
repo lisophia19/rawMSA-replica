@@ -256,8 +256,8 @@ def main():
         train_sequences_tensor = train_sequences_tensor.to(device)
         train_labels_tensor = train_labels_tensor.to(device)
 	
-       	num_train_entries = train_sequences_tensor.shape[0]
-	print(num_train_entries)
+        num_train_entries = train_sequences_tensor.shape[0]
+        print(num_train_entries)
 
         train_dataset = MSASlidingWindowDataset(train_sequences_tensor, train_labels_tensor, window_size=31, max_depth=15)
         curr_loss = 0.
