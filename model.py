@@ -51,9 +51,9 @@ class RSAProteinModel(nn.Module):
 
         self.dropout = nn.Dropout(self.dropout_rate)
 
-        self.fc1 = nn.Linear(self.sequence_length * self.lstm_hidden, 250)
+        self.fc1 = nn.Linear(self.sequence_length * self.lstm_hidden, 350)
         # self.dl1 = nn.Linear()
-        self.fc2 = nn.Linear(250, 100)
+        self.fc2 = nn.Linear(350, 100)
         self.fc3 = nn.Linear(100, 4) #9 secondary structures from preprocessing
 
     def forward(self, x):
@@ -178,12 +178,8 @@ def train_data_processing(train_body_seq_dict, train_master_seq_dict, device):
 def batch_step(optimizer, model, item, device, is_training = True):
     optimizer.zero_grad()   # clear gradients beforehand
 
-    #input_tensor = item[0]  # corresponds to the input_tensor for the current sliding window
-    #labels_tensor = item[1] # Corresponds to the labels for ALL of the current sequences
-    #curr_index = item[2]    # Corresponds to current index of the master sequence we are predicting for
-
-    input_tensor = move_data_to_device(item[0], device)
-    labels_tensor = move_data_to_device(item[1], device)
+    input_tensor = move_data_to_device(item[0], device) # corresponds to the input_tensor for the current sliding window
+    labels_tensor = move_data_to_device(item[1], device) # Corresponds to the labels for ALL of the current sequences
 
     y_pred = model(input_tensor)   # Outputs (1,9) vector of softmax values
 
