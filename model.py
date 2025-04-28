@@ -56,7 +56,7 @@ class RSAProteinModel(nn.Module):
         self.fc2 = nn.Linear(350, 100)
         self.fc3 = nn.Linear(100, 4) #9 secondary structures from preprocessing
 
-    def forward(self, x, is_training):
+    def forward(self, x, is_training=True):
         # x: (batch_size, 31*max_depth=31*15=465)  -- max depth = number of sequences
         x = self.embedding(x)  # -> (batch_size, 465, 14)        
         x = x.view(-1, 31, self.num_sequences, self.embedding_dim) #reshape to (batch_size, 31, 15, 14)
@@ -188,7 +188,7 @@ def batch_step(optimizer, model, item, device, is_training = True):
     input_tensor = move_data_to_device(item[0], device) # corresponds to the input_tensor for the current sliding window
     labels_tensor = move_data_to_device(item[1], device) # Corresponds to the labels for ALL of the current sequences
 
-    y_pred = model(input_tensor)   # Outputs (1,9) vector of softmax values
+    y_pred = model(input_tensor, is_training=is_training)   # Outputs (1,9) vector of softmax values
 
     # Get label at current idx for master sequence
     actual_label = labels_tensor.long() - 1  # make sure it's a LongTensor
