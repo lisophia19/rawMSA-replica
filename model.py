@@ -53,8 +53,8 @@ class RSAProteinModel(nn.Module):
 
         self.fc1 = nn.Linear(self.sequence_length * self.lstm_hidden, 250)
         # self.dl1 = nn.Linear()
-        self.fc2 = nn.Linear(250, 75)
-        self.fc3 = nn.Linear(75, 4) #9 secondary structures from preprocessing
+        self.fc2 = nn.Linear(250, 100)
+        self.fc3 = nn.Linear(100, 4) #9 secondary structures from preprocessing
 
     def forward(self, x):
         # x: (batch_size, 31*max_depth=31*15=465)  -- max depth = number of sequences
