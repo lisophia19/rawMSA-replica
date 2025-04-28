@@ -191,16 +191,12 @@ def batch_step(optimizer, model, item, device, is_training = True):
     actual_label = labels_tensor.long() - 1  # make sure it's a LongTensor
     actual_label = actual_label.squeeze()           # match (batch_size=1,) if necessary
 
-    # print("PREDICTIONS SHAPE: ", y_pred.shape)
-    # print("LABELS SHAPE: ", actual_label.shape)
-
     loss = model.loss(y_pred, actual_label)
 
     if is_training:
         loss.backward()
         optimizer.step()
-
-    # evaluation after epoch - accuracy computation
+    
 
     return (loss.item(), model.accuracy(y_pred, actual_label))
 
@@ -227,10 +223,6 @@ def main():
     test_master_seq_dict = move_data_to_device(gather_master_sequences([], data_type="test"), device)
     val_master_seq_dict = move_data_to_device(gather_master_sequences([], data_type='val'), device)
 
-    #build datasets using the custom sliding window class
-    #train_dataset = MSASlidingWindowDataset(train_msa_tensor, train_labels_tensor, window_size=31, max_depth=15)
-    #train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
-
     train_body_seq_dict, test_body_seq_dict, val_body_seq_dict = gather_body_sequences()
     train_body_seq_dict = move_data_to_device(train_body_seq_dict, device)
     test_body_seq_dict = move_data_to_device(test_body_seq_dict, device)
@@ -248,16 +240,14 @@ def main():
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=1, verbose=True)
 
     # training loop for 5 epochs (up to 5 in paper)
-    epochs = 15
+    epochs = 5
     for j in range(epochs):
         # Train Data
         train_sequences_tensor, train_labels_tensor = train_data_processing(train_body_seq_dict, train_master_seq_dict, device=device)
-        # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
         train_sequences_tensor = train_sequences_tensor.to(device)
         train_labels_tensor = train_labels_tensor.to(device)
 	
-        num_train_entries = train_sequences_tensor.shape[0]
-        print(num_train_entries)
+        num_train_entries = train_sequences_tensor.shape[1]
 
         train_dataset = MSASlidingWindowDataset(train_sequences_tensor, train_labels_tensor, window_size=31, max_depth=15)
         curr_loss = 0.
@@ -271,17 +261,15 @@ def main():
         val_loss = 0.
         val_acc = 0.
 
-        num_val_entries = val_sequences_tensor.shape[0]
+        num_val_entries = val_sequences_tensor.shape[1]
         
-        # Train for N-total batches of batch-size M (i.e. 15) for EACH family domain as well
+        count = 0
         for item in tqdm(train_dataset, desc=f"Epoch {j+1} Training"):
-            # print(item[1].shape)
-
+            count+=1
             loss, acc = batch_step(optimizer, model, item, device)
             curr_loss += loss
             train_acc += acc
         
-        # print(len(train_dataset))
         print(f"After epoch {j+1}: Accuracy ={train_acc / num_train_entries:.4f}; Running Loss = {curr_loss:.4f}")
 
         for item in tqdm(val_dataset):
@@ -300,7 +288,7 @@ def main():
     test_loss = 0.
     test_acc = 0.
 
-    num_test_entries = test_sequences_tensor.shape[0]
+    num_test_entries = test_sequences_tensor.shape[1]
 
     for item in tqdm(test_dataset):
         loss, acc = batch_step(optimizer, model, item, device, is_training=False)
