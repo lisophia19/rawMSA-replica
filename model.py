@@ -31,7 +31,7 @@ class RSAProteinModel(nn.Module):
         # For the LSTM BRNNs
         self.lstm_hidden = 350
 
-        self.dropout_rate=0.4
+        self.dropout_rate=0.25
 
         self.num_sequences = num_sequences
 
@@ -56,7 +56,7 @@ class RSAProteinModel(nn.Module):
         self.fc2 = nn.Linear(350, 100)
         self.fc3 = nn.Linear(100, 4) #9 secondary structures from preprocessing
 
-    def forward(self, x):
+    def forward(self, x, is_training):
         # x: (batch_size, 31*max_depth=31*15=465)  -- max depth = number of sequences
         x = self.embedding(x)  # -> (batch_size, 465, 14)        
         x = x.view(-1, 31, self.num_sequences, self.embedding_dim) #reshape to (batch_size, 31, 15, 14)
@@ -69,15 +69,22 @@ class RSAProteinModel(nn.Module):
         x = x.view(x.size(0), 31, -1)  # (batch, 31, 28)
 
         lstm_out1, _ = self.bilstm1(x)
-        lstm_out1 = self.dropout(lstm_out1)
+        if is_training:
+            lstm_out1 = self.dropout(lstm_out1)
         lstm_out2, _ = self.bilstm2(lstm_out1)
-        lstm_out2 = self.dropout(lstm_out2)
+        if is_training:
+            lstm_out2 = self.dropout(lstm_out2)
 
         lstm_out = 0.5 * (lstm_out2[:, :, :lstm_out2.size(2)//2] + lstm_out2[:, :, lstm_out2.size(2)//2:])
 
         x = lstm_out.contiguous().view(x.size(0), -1)  # flatten
-        x = self.dropout(F.linear(x, self.fc1.weight, self.fc1.bias))
-        x = self.dropout(F.linear(x, self.fc2.weight, self.fc2.bias))
+
+        if is_training:
+            x = self.dropout(F.linear(x, self.fc1.weight, self.fc1.bias))
+            x = self.dropout(F.linear(x, self.fc2.weight, self.fc2.bias))
+        else:
+            x = F.linear(x, self.fc1.weight, self.fc1.bias)
+            x = F.linear(x, self.fc2.weight, self.fc2.bias)
         x = self.fc3(x)
 
         return F.log_softmax(x, dim=-1)
@@ -236,7 +243,7 @@ def main():
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=1, verbose=True)
 
     # training loop for 5 epochs (up to 5 in paper)
-    epochs = 5
+    epochs = 10
     for j in range(epochs):
         # Train Data
         train_sequences_tensor, train_labels_tensor = train_data_processing(train_body_seq_dict, train_master_seq_dict, device=device)
