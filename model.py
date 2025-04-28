@@ -257,7 +257,7 @@ def main():
         train_labels_tensor = train_labels_tensor.to(device)
 	
         num_train_entries = train_sequences_tensor.shape[0]
-        print(num_train_entries)
+        print(train_sequences_tensor.shape)
 
         train_dataset = MSASlidingWindowDataset(train_sequences_tensor, train_labels_tensor, window_size=31, max_depth=15)
         curr_loss = 0.
@@ -273,15 +273,16 @@ def main():
 
         num_val_entries = val_sequences_tensor.shape[0]
         
+		count = 0
         # Train for N-total batches of batch-size M (i.e. 15) for EACH family domain as well
         for item in tqdm(train_dataset, desc=f"Epoch {j+1} Training"):
             # print(item[1].shape)
-
+		count+=1
             loss, acc = batch_step(optimizer, model, item, device)
             curr_loss += loss
             train_acc += acc
         
-        # print(len(train_dataset))
+        print(count)
         print(f"After epoch {j+1}: Accuracy ={train_acc / num_train_entries:.4f}; Running Loss = {curr_loss:.4f}")
 
         for item in tqdm(val_dataset):
