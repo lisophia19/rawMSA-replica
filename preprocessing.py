@@ -4,23 +4,15 @@ import numpy as np
 import os
 import random
 
-
-# train_seq_dict = dict()
-# # train_labels_dict = dict()
-# test_seq_dict = dict()
-# test_labels_dict = dict()
-
+# global dicts for converion
 letter_to_number = { 'P':1, 'U':2, 'C':3, 'A':4, 'G':5, 'S':6, 'N':7, 'B':8, 'D':9, 'E':10, 'Z':11, 'Q':12, 'R':13, 'K':14, 'H':15, 'F':16, 'Y':17, 'W':18, 'M':19, 'L':20, 'I':21, 'V':22, 'T':23, '.':24, 'X':25 }
-# ss_to_number = {'H': 1, 'E':2, 'T': 3, 'S': 4, 'G': 5, 'I':6, 'C':7, '.':8, '-':9}
 ss_to_number = {'H': 1, 'S':2, 'C': 3, '-': 4}
 
 def batch_train_data(train_seq_dict, batch_num : int, file_id : str):
     batch_size = 14
     train_seq_data = train_seq_dict[file_id]
-    #train_labels = train_labels_dict[file_name]
 
     seq_batch = train_seq_data[batch_size * batch_num : batch_size * (batch_num + 1)][:]
-    #labels_batch = train_labels[batch_size * batch_num : batch_size * (batch_num + 1)][:]
 
     return seq_batch
 
@@ -28,10 +20,8 @@ def batch_train_data(train_seq_dict, batch_num : int, file_id : str):
 def batch_testdata(test_seq_dict, batch_num : int, file_id : str):
     batch_size = 14
     test_seq_data = test_seq_dict[file_id]
-    #train_labels = train_labels_dict[file_name]
 
     seq_batch = test_seq_data[batch_size * batch_num : batch_size * (batch_num + 1)][:]
-    #labels_batch = train_labels[batch_size * batch_num : batch_size * (batch_num + 1)][:]
 
     return seq_batch
 
@@ -105,7 +95,6 @@ def gather_master_sequences(all_files : list[str], data_type = "train"):
             master_seq, seq_labels = map_to_integer(file_path)
             master_seq, seq_labels = shuffle_data(master_seq, seq_labels)
 
-            # print(len(master_seq))
             master_seq_dict[file_id] = (master_seq, seq_labels)
     else:
         for file_name in all_files:
@@ -117,8 +106,6 @@ def gather_master_sequences(all_files : list[str], data_type = "train"):
             master_seq, seq_labels = shuffle_data(master_seq, seq_labels)
 
             master_seq_dict[file_id] = (master_seq, seq_labels)
-            # print(master_seq_dict[file_id])
-
 
     return master_seq_dict
 
@@ -134,7 +121,6 @@ def gather_body_sequences():
         sequence_data_tensor = torch.tensor(sequence_data)
 
         file_id = data_file[0:7]
-        #print(f"{file_id} is {len(sequence_data[0])} length")
         train_seq_dict[file_id] = sequence_data_tensor
 
     #testing data collection
@@ -159,8 +145,4 @@ def gather_body_sequences():
 
     return train_seq_dict, test_seq_dict, val_seq_dict
 
-#master_seq_dict = gather_master_sequences(["PF00018.master.txt"])
-#gather_body_sequences()
-# min_num_batches = min_number_body_seq // 15
-#print(master_seq_dict)
 

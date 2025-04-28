@@ -8,26 +8,15 @@ import os
 import numpy as np
 import random
 
-""""
-model assumes input sequence is of length 31000 but we mgiht need to fix that...
-embedding_dim = output_dim
-
-tbd number of seqeunces + 200 residues max 
-"""
-
 class RSAProteinModel(nn.Module):
     # num_sequences corresponds to the number of vertical columns (sequences); equivalent to the Y-dimension
     def __init__(self, num_sequences):
         super(RSAProteinModel, self).__init__()
-
-        # sequence_length=31, input_embedding_sz=26, embedding_dim=14, lstm_hidden=350, dropout_rate=0.4
-        # Represents the number of residues per sequence; Equal to 31 for SS prediction
+        # represents the number of residues per sequence; Equal to 31 for SS prediction
         self.sequence_length = 31
-
-        # Represents number of tokens to embed
-        self.input_embedding_sz = 26
-        # Represents number of items for each vector
-        self.embedding_dim = 14
+        self.input_embedding_sz = 26  # represents number of tokens to embed
+        self.embedding_dim = 14 # represents number of items for each vector
+        
         # For the LSTM BRNNs
         self.lstm_hidden = 350
 
@@ -52,9 +41,8 @@ class RSAProteinModel(nn.Module):
         self.dropout = nn.Dropout(self.dropout_rate)
 
         self.fc1 = nn.Linear(self.sequence_length * self.lstm_hidden, 350)
-        # self.dl1 = nn.Linear()
         self.fc2 = nn.Linear(350, 100)
-        self.fc3 = nn.Linear(100, 4) #9 secondary structures from preprocessing
+        self.fc3 = nn.Linear(100, 4) #4 secondary structures from preprocessing
 
     def forward(self, x, is_training):
         # x: (batch_size, 31*max_depth=31*15=465)  -- max depth = number of sequences
@@ -93,7 +81,6 @@ class RSAProteinModel(nn.Module):
     def loss(self, predictions, labels):
         # predictions: (batch_size, num_classes)
         # labels: (batch_size, num_classes)
-        # return F.cross_entropy(predictions, labels)
         return F.nll_loss(predictions, labels)
 
     def accuracy(self, predictions, labels):
@@ -101,7 +88,6 @@ class RSAProteinModel(nn.Module):
         # true_classes = torch.argmax(labels, 1)
         # correct_prediction = torch.eq(pred_classes, true_classes)
         correct_prediction = (pred_classes == labels)
-        # return torch.mean(torch.Tensor(correct_prediction).to(torch.float32))
         return torch.mean(correct_prediction.float())
 
 
@@ -137,7 +123,7 @@ class MSASlidingWindowDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         window = self.msa_padded[:, idx:idx+self.window_size, :]  # (31, Y)
         window_flat = torch.flatten(window, start_dim=1, end_dim=2)  # (31*Y,)
-        label = self.labels[:, idx]  # Need these to be of shape (31*Y) as well
+        label = self.labels[:, idx]  # need these to be of shape (31*Y) as well
 
         return window_flat, label, idx
    
@@ -157,11 +143,8 @@ def train_data_processing(train_body_seq_dict, train_master_seq_dict, device):
         for batch_num in range(num_batches):
             curr_master_seqs = train_master_seq_dict[family_id]
             num_master_seqs = len(curr_master_seqs[0])
-            # print(f"Number of Master Sequences for PID: {family_id}: ",  num_master_seqs)
 
             random_index = random.randrange(0, num_master_seqs)
-            # print(random_index)
-
             master_seq = curr_master_seqs[0][random_index]
             master_seq_label = curr_master_seqs[1][random_index]
 
@@ -186,9 +169,9 @@ def batch_step(optimizer, model, item, device, is_training = True):
     optimizer.zero_grad()   # clear gradients beforehand
 
     input_tensor = move_data_to_device(item[0], device) # corresponds to the input_tensor for the current sliding window
-    labels_tensor = move_data_to_device(item[1], device) # Corresponds to the labels for ALL of the current sequences
+    labels_tensor = move_data_to_device(item[1], device) # corresponds to the labels for ALL of the current sequences
 
-    y_pred = model(input_tensor)   # Outputs (1,9) vector of softmax values
+    y_pred = model(input_tensor)   # outputs (1,9) vector of softmax values
 
     # Get label at current idx for master sequence
     actual_label = labels_tensor.long() - 1  # make sure it's a LongTensor
@@ -216,12 +199,12 @@ def move_data_to_device(data, device):
 
 
 def main():
+    #connect to gpu
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Master Sequences: Dictionary of list (tuple of tensors)
     # Key: Family ID, Value: list
     # Pull a random Master sequence from the current domain
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_master_seq_dict = move_data_to_device(gather_master_sequences([]), device)
     test_master_seq_dict = move_data_to_device(gather_master_sequences([], data_type="test"), device)
     val_master_seq_dict = move_data_to_device(gather_master_sequences([], data_type='val'), device)
@@ -235,12 +218,11 @@ def main():
     # N = number of sequences
     # L = length of each sequence
 
-    # #create model
+    # create model
     model = RSAProteinModel(num_sequences=15)
     model = model.to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
-    #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=1, verbose=True)
 
     # training loop for 5 epochs (up to 5 in paper)
     epochs = 10
