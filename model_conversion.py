@@ -1,3 +1,4 @@
+# THIS SCRIPT WAS ONLY USED TO OBTAIN THE ORIGINAL MODEL
 import pandas as pd
 import os
 import tensorflow as tf

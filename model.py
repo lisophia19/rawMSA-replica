@@ -12,31 +12,26 @@ class RSAProteinModel(nn.Module):
     # num_sequences corresponds to the number of vertical columns (sequences); equivalent to the Y-dimension
     def __init__(self, num_sequences):
         super(RSAProteinModel, self).__init__()
-        # represents the number of residues per sequence; Equal to 31 for SS prediction
-        self.sequence_length = 31
-        self.input_embedding_sz = 26  # represents number of tokens to embed
-        self.embedding_dim = 14 # represents number of items for each vector
+
+        self.sequence_length = 31           # represents the number of residues per sequence; Equal to 31 for SS prediction
+        self.input_embedding_sz = 25        # represents number of tokens to embed (corresponds to the 25 amino acids)
+        self.embedding_dim = 14             # represents number of items for each vector (dimensionality of the embeddings)
         
         # For the LSTM BRNNs
         self.lstm_hidden = 350
-
         self.dropout_rate=0.25
-
         self.num_sequences = num_sequences
 
-        #input_dim = 25 residues + pad, embed to 14
-        self.embedding = nn.Embedding(num_embeddings=self.input_embedding_sz, embedding_dim=self.embedding_dim)
 
-        #input channels = 14 and output channels = 14
-        # Originally: padding = (0, 5)
+        # Below defines the layers for the model
+        self.embedding = nn.Embedding(num_embeddings=self.input_embedding_sz, embedding_dim=self.embedding_dim)
         self.conv = nn.Conv2d(in_channels=self.embedding_dim, out_channels=self.embedding_dim, kernel_size=(1, 11), padding=(0, 5))
         self.pool = nn.MaxPool2d(kernel_size=(1, 10), stride=(1, 10))
 
-        # LSTM input size = 14*2
         self.bilstm1 = nn.LSTM(input_size=(self.embedding_dim * (self.num_sequences // 10)), hidden_size=self.lstm_hidden, num_layers=1, 
                                batch_first=True, bidirectional=True)
         self.bilstm2 = nn.LSTM(input_size=2*self.lstm_hidden, hidden_size=self.lstm_hidden, num_layers=1, 
-                               batch_first=True, bidirectional=True) #two bilstm of size 350
+                               batch_first=True, bidirectional=True)
 
         self.dropout = nn.Dropout(self.dropout_rate)
 
@@ -79,14 +74,10 @@ class RSAProteinModel(nn.Module):
 
     # labels are NOT one-hot, but indices
     def loss(self, predictions, labels):
-        # predictions: (batch_size, num_classes)
-        # labels: (batch_size, num_classes)
         return F.nll_loss(predictions, labels)
 
     def accuracy(self, predictions, labels):
         pred_classes = torch.argmax(predictions, dim=1)
-        # true_classes = torch.argmax(labels, 1)
-        # correct_prediction = torch.eq(pred_classes, true_classes)
         correct_prediction = (pred_classes == labels)
         return torch.mean(correct_prediction.float())
 
@@ -150,14 +141,13 @@ def train_data_processing(train_body_seq_dict, train_master_seq_dict, device):
 
             batch_data = batch_train_data(train_body_seq_dict, batch_num, family_id)
 
-            # curr_batch = [master_seq] + batch_data
             master_seq = torch.tensor(master_seq, device=device)
             curr_batch = torch.concat((master_seq.unsqueeze(0), batch_data))
 
             master_seq_label = torch.tensor(master_seq_label, device=device)
 
-            training_inputs.append(curr_batch) #master seq is first in list
-            training_labels.append(master_seq_label.unsqueeze(0)) #training labels only has one label aka master
+            training_inputs.append(curr_batch) # master seq is first in list
+            training_labels.append(master_seq_label.unsqueeze(0)) # training labels only has one label a.k.a. master
 
     training_inputs = torch.stack(training_inputs).permute(0, 2, 1)
     training_labels = torch.stack(training_labels).permute(0, 2, 1)
@@ -171,11 +161,10 @@ def batch_step(optimizer, model, item, device, is_training = True):
     input_tensor = move_data_to_device(item[0], device) # corresponds to the input_tensor for the current sliding window
     labels_tensor = move_data_to_device(item[1], device) # corresponds to the labels for ALL of the current sequences
 
-    y_pred = model(input_tensor)   # outputs (1,9) vector of softmax values
+    y_pred = model(input_tensor)   # outputs (1, 4) vector of softmax values
 
-    # Get label at current idx for master sequence
-    actual_label = labels_tensor.long() - 1  # make sure it's a LongTensor
-    actual_label = actual_label.squeeze()           # match (batch_size=1,) if necessary
+    actual_label = labels_tensor.long() - 1
+    actual_label = actual_label.squeeze()
 
     loss = model.loss(y_pred, actual_label)
 
@@ -183,7 +172,6 @@ def batch_step(optimizer, model, item, device, is_training = True):
         loss.backward()
         optimizer.step()
     
-
     return (loss.item(), model.accuracy(y_pred, actual_label))
 
 

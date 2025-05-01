@@ -1,4 +1,3 @@
-# import tensorflow as tf
 import torch
 import numpy as np
 import os
@@ -29,7 +28,7 @@ def compile_tensor(line, sequence_type):
     line = line.rstrip()
     
     count = 0
-    # Represents the number of residues 
+    # Represents the number of residues we want to analyze for each sequence 
     limit = 200
 
     current_seq = np.zeros(limit)
